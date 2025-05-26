@@ -65,4 +65,8 @@ public class User {
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private Timestamp createdAt;
+
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Timestamp updatedAt;
 }

@@ -135,6 +135,17 @@
                         </configuration>
                     </execution>
 
+                    <execution>
+                        <id>products</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                        <configuration>
+                            <configFile>services/products/config/dev/flyway.conf</configFile>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
             <plugin>

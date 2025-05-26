@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.longg.nh.kickstyleecommerce.domain.dtos.responses.UserResponse;
 
 @Data
 @AllArgsConstructor

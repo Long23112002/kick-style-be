@@ -5,11 +5,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.LoginRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.RegisterRequest;
-import org.longg.nh.kickstyleecommerce.domain.dtos.responses.UserResponse;
+import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.AuthResponse;
 import org.longg.nh.kickstyleecommerce.domain.services.auth.AuthService;
 import org.longg.nh.kickstyleecommerce.domain.utils.JwtUtils;
-import org.longg.nh.kickstyleecommerce.infrastructure.config.annotation.CheckRole;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

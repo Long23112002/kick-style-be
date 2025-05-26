@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.LoginRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.RegisterRequest;
-import org.longg.nh.kickstyleecommerce.domain.dtos.responses.UserResponse;
+import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.AuthResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.AccessToken;
 import org.longg.nh.kickstyleecommerce.domain.entities.Role;
@@ -17,8 +17,6 @@ import org.longg.nh.kickstyleecommerce.domain.utils.JwtUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

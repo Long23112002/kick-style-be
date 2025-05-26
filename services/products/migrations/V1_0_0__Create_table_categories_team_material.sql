@@ -1,0 +1,31 @@
+CREATE TABLE categories
+(
+    id         BIGSERIAL PRIMARY KEY,
+    name       VARCHAR(255) NOT NULL,
+    slug       VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN   DEFAULT FALSE
+);
+
+CREATE TABLE materials
+(
+    id         BIGSERIAL PRIMARY KEY,
+    name       VARCHAR(255) NOT NULL,
+    slug       VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN   DEFAULT FALSE
+);
+
+CREATE TABLE teams
+(
+    id         BIGSERIAL PRIMARY KEY,
+    name       VARCHAR(255) NOT NULL,
+    league     VARCHAR(255),
+    country    VARCHAR(255),
+    logo_url   TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN   DEFAULT FALSE
+);

@@ -1,4 +1,4 @@
-package org.longg.nh.kickstyleecommerce.domain.dtos.requests;
+package org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

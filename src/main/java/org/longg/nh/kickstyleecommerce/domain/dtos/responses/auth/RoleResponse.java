@@ -1,4 +1,4 @@
-package org.longg.nh.kickstyleecommerce.domain.dtos.responses;
+package org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +16,8 @@ public class RoleResponse {
     private String name;
 
     private Timestamp createdAt;
+
+    private Timestamp updatedAt;
 
     private Boolean isDeleted;
 }

@@ -10,14 +10,15 @@ import org.hibernate.annotations.Where;
 import java.sql.Timestamp;
 
 @Entity
-@Table(name = "role", schema = "users")
+@Table(name = "teams", schema = "products")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@SQLDelete(sql = "UPDATE products.teams SET is_deleted = true WHERE id = ?")
 @Where(clause = "is_deleted = false")
-@SQLDelete(sql = "UPDATE users.role SET is_deleted = true WHERE id = ?")
-public class Role {
+public class Team {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,12 +27,21 @@ public class Role {
   @Column(nullable = false)
   private String name;
 
+  @Column(name = "league")
+  private String league;
+
+  @Column(name = "country")
+  private String country;
+
+  @Column(name = "logo_url", columnDefinition = "TEXT")
+  private String logoUrl;
+
   @CreationTimestamp
-  @Column(name = "created_at", nullable = false, updatable = false)
+  @Column(name = "created_at", updatable = false)
   private Timestamp createdAt;
 
   @UpdateTimestamp
-  @Column(name = "updated_at", nullable = false)
+  @Column(name = "updated_at")
   private Timestamp updatedAt;
 
   @Column(name = "is_deleted")

@@ -1,12 +1,8 @@
-package org.longg.nh.kickstyleecommerce.domain.dtos.requests;
+package org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.NotFound;
-import org.hibernate.annotations.NotFoundAction;
-import org.longg.nh.kickstyleecommerce.domain.entities.Role;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.Gender;
 
 @Data
