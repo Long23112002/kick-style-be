@@ -92,3 +92,10 @@ app:
   mail:
     from: ${MAIL_FROM:noreply@kickstyle.com}
     from-name: ${MAIL_FROM_NAME:KickStyle E-commerce}
+
+upload:
+  dir: ${UPLOAD_DIR}
+url:
+  server: ${URL_SERVER}
+  port: ${PORT_SERVER}
+  host: ${HOST_SERVER}
