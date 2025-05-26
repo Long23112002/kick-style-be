@@ -1,6 +1,5 @@
 package org.longg.nh.kickstyleecommerce.infrastructure.config;
 
-
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -12,18 +11,18 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @OpenAPIDefinition(
-        info = @Info(title = "Affiliate API", version = "1.0", description = "Affiliate Service API"),
-        servers = {
-                @Server(url = "http://localhost:8386", description = "local")
-        },
-        security = @SecurityRequirement(name = "bearerAuth"))
+    info = @Info(title = "Affiliate API", version = "1.0", description = "Affiliate Service API"),
+    servers = {
+      @Server(url = "http://103.77.160.47:8386/kick-style", description = "host"),
+      @Server(url = "http://localhost:8386/kick-style", description = "local")
+    },
+    security = @SecurityRequirement(name = "bearerAuth"))
 @SecuritySchemes({
-        @SecurityScheme(
-                name = "bearerAuth",
-                type = SecuritySchemeType.HTTP,
-                scheme = "bearer",
-                bearerFormat = "JWT",
-                description = "Enter JWT Bearer Token here")
+  @SecurityScheme(
+      name = "bearerAuth",
+      type = SecuritySchemeType.HTTP,
+      scheme = "bearer",
+      bearerFormat = "JWT",
+      description = "Enter JWT Bearer Token here")
 })
 public class OpenApiConfig {}
-
