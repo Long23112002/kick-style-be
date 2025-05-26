@@ -131,7 +131,7 @@ public class EmailService {
                     .button {
                         display: inline-block;
                         background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-                        color: white;
+                        color: white !important;
                         padding: 15px 30px;
                         text-decoration: none;
                         border-radius: 25px;
@@ -153,12 +153,12 @@ public class EmailService {
                 <div class="container">
                     <div class="header">
                         <h1>🛍️ %s</h1>
-                        <p style="margin: 10px 0 0 0; opacity: 0.9;">Chào mừng bạn đến với cửa hàng giày thể thao hàng đầu!</p>
+                        <p style="margin: 10px 0 0 0; opacity: 0.9;">Chào mừng bạn đến với cửa hàng bán quần áo bóng đá </p>
                     </div>
                     <div class="content">
                         <h2>🎉 Chào %s!</h2>
                         <p>Cảm ơn bạn đã đăng ký tài khoản tại <strong>%s</strong>!</p>
-                        <p>Để hoàn tất quá trình đăng ký và bắt đầu mua sắm những đôi giày thể thao tuyệt vời, vui lòng click vào nút bên dưới để xác thực email:</p>
+                        <p>Để hoàn tất quá trình đăng ký và bắt đầu mua sắm những bộ quần áo bóng đá tuyệt vời, vui lòng click vào nút bên dưới để xác thực email:</p>
                         
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="%s" class="button">✅ Xác thực tài khoản ngay</a>
