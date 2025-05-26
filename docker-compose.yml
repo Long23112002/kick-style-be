@@ -1,0 +1,53 @@
+#services:
+#  postgres:
+#    image: postgres:14
+#    container_name: kick-style-db
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_USER: admin
+#      POSTGRES_PASSWORD: 12345678
+#      POSTGRES_DB: kick-style
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    networks:
+#      - kick-style-network
+#
+#volumes:
+#  postgres_data:
+#
+#networks:
+#  kick-style-network:
+
+services:
+  kickstyle-ecommerce:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kickstyle-ecommerce
+    env_file:
+      - .env
+    ports:
+      - "8386:8386"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+    container_name: kickstyle-ecommerce
+    volumes:
+      - /opt/global:/opt/global/
+    mem_limit: 1G
+    restart: always
+    networks:
+      - lubumall
+
+networks:
+  lubumall:
+    driver: bridge
+
+
+
+
+
