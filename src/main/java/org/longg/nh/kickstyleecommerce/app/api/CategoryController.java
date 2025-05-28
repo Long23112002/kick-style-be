@@ -3,8 +3,6 @@ package org.longg.nh.kickstyleecommerce.app.api;
 import com.eps.shared.interfaces.api.IBaseApi;
 import com.eps.shared.interfaces.services.IBaseService;
 import com.eps.shared.models.HeaderContext;
-import lombok.RequiredArgsConstructor;
-import org.longg.nh.kickstyleecommerce.domain.dtos.filter.CategoryParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.CategoryRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.CategoryResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.Category;
@@ -21,12 +19,12 @@ import java.util.Map;
 @RequestMapping("/api/v1/categories")
 // @RequiredArgsConstructor
 public class CategoryController
-    implements IBaseApi<Category, Long, CategoryResponse, CategoryRequest, CategoryParam> {
+    implements IBaseApi<Category, Long, CategoryResponse, CategoryRequest, CategoryResponse> {
 
   @Autowired private CategoryService categoryService;
 
   @Override
-  public IBaseService<Category, Long, CategoryResponse, CategoryRequest, CategoryParam>
+  public IBaseService<Category, Long, CategoryResponse, CategoryRequest, CategoryResponse>
       getService() {
     return categoryService;
   }

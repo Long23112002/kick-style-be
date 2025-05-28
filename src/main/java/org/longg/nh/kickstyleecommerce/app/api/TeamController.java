@@ -4,7 +4,6 @@ import com.eps.shared.interfaces.api.IBaseApi;
 import com.eps.shared.interfaces.services.IBaseService;
 import com.eps.shared.models.HeaderContext;
 import lombok.RequiredArgsConstructor;
-import org.longg.nh.kickstyleecommerce.domain.dtos.filter.TeamParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.TeamRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.TeamResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.Team;
@@ -19,12 +18,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/teams")
 @RequiredArgsConstructor
-public class TeamController implements IBaseApi<Team, Long, TeamResponse, TeamRequest, TeamParam> {
+public class TeamController implements IBaseApi<Team, Long, TeamResponse, TeamRequest, TeamResponse> {
 
   private final TeamService teamService;
 
   @Override
-  public IBaseService<Team, Long, TeamResponse, TeamRequest, TeamParam> getService() {
+  public IBaseService<Team, Long, TeamResponse, TeamRequest, TeamResponse> getService() {
     return teamService;
   }
 

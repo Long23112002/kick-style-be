@@ -7,7 +7,6 @@ import com.eps.shared.utils.functions.PentaConsumer;
 import com.eps.shared.utils.functions.QuadConsumer;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.TriConsumer;
-import org.longg.nh.kickstyleecommerce.domain.dtos.filter.CategoryParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.CategoryRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.CategoryResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.Category;
@@ -20,7 +19,7 @@ import java.util.function.BiFunction;
 @Service
 @RequiredArgsConstructor
 public class CategoryService
-    implements IBaseService<Category, Long, CategoryResponse, CategoryRequest, CategoryParam> {
+    implements IBaseService<Category, Long, CategoryResponse, CategoryRequest, CategoryResponse> {
 
   private final CategoryPersistence categoryPersistence;
 

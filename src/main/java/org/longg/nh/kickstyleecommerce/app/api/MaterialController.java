@@ -4,7 +4,6 @@ import com.eps.shared.interfaces.api.IBaseApi;
 import com.eps.shared.interfaces.services.IBaseService;
 import com.eps.shared.models.HeaderContext;
 import lombok.RequiredArgsConstructor;
-import org.longg.nh.kickstyleecommerce.domain.dtos.filter.MaterialParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.MaterialRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.MaterialResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.Material;
@@ -20,12 +19,12 @@ import java.util.Map;
 @RequestMapping("/api/v1/materials")
 @RequiredArgsConstructor
 public class MaterialController
-    implements IBaseApi<Material, Long, MaterialResponse, MaterialRequest, MaterialParam> {
+    implements IBaseApi<Material, Long, MaterialResponse, MaterialRequest, MaterialResponse> {
 
   private final MaterialService materialService;
 
   @Override
-  public IBaseService<Material, Long, MaterialResponse, MaterialRequest, MaterialParam>
+  public IBaseService<Material, Long, MaterialResponse, MaterialRequest, MaterialResponse>
       getService() {
     return materialService;
   }

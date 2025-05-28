@@ -7,11 +7,8 @@ import com.eps.shared.utils.functions.PentaConsumer;
 import com.eps.shared.utils.functions.QuadConsumer;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.TriConsumer;
-import org.longg.nh.kickstyleecommerce.domain.dtos.filter.MaterialParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.MaterialRequest;
-import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.CategoryResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.MaterialResponse;
-import org.longg.nh.kickstyleecommerce.domain.entities.Category;
 import org.longg.nh.kickstyleecommerce.domain.entities.Material;
 import org.longg.nh.kickstyleecommerce.domain.persistence.MaterialPersistence;
 import org.longg.nh.kickstyleecommerce.domain.utils.SlugUtils;
@@ -22,7 +19,7 @@ import java.util.function.BiFunction;
 @Service
 @RequiredArgsConstructor
 public class MaterialService
-    implements IBaseService<Material, Long, MaterialResponse, MaterialRequest, MaterialParam> {
+    implements IBaseService<Material, Long, MaterialResponse, MaterialRequest, MaterialResponse> {
 
   private final MaterialPersistence materialPersistence;
 
