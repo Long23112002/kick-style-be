@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.LoginRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.RegisterRequest;
+import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.ChangePasswordRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.AuthResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.AccessToken;
@@ -196,6 +197,45 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseException(HttpStatus.UNAUTHORIZED, "Token không hợp lệ hoặc đã hết hạn"));
         
         return buildUserResponse(accessToken.getUser());
+    }
+    
+    /**
+     * Đổi mật khẩu (yêu cầu mật khẩu cũ)
+     */
+    @Transactional
+    public String changePassword(String token, ChangePasswordRequest request) {
+        log.info("Password change attempt with token: {}", JwtUtils.maskToken(token));
+        
+        // Validate access token và lấy user
+        AccessToken accessToken = tokenService.validateAccessToken(token)
+                .orElseThrow(() -> new ResponseException(HttpStatus.UNAUTHORIZED, "Token không hợp lệ hoặc đã hết hạn"));
+        
+        User user = accessToken.getUser();
+        
+        // Validate mật khẩu cũ
+        if (!passwordEncoderService.matches(request.getOldPassword(), user.getPassword())) {
+            throw new ResponseException(HttpStatus.BAD_REQUEST, "Mật khẩu cũ không chính xác");
+        }
+        
+        // Validate mật khẩu mới và xác nhận mật khẩu
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new ResponseException(HttpStatus.BAD_REQUEST, "Mật khẩu mới và xác nhận mật khẩu không khớp");
+        }
+        
+        // Kiểm tra mật khẩu mới không được giống mật khẩu cũ
+        if (passwordEncoderService.matches(request.getNewPassword(), user.getPassword())) {
+            throw new ResponseException(HttpStatus.BAD_REQUEST, "Mật khẩu mới phải khác mật khẩu cũ");
+        }
+        
+        // Cập nhật mật khẩu mới
+        user.setPassword(passwordEncoderService.encode(request.getNewPassword()));
+        userRepository.save(user);
+        
+        // Revoke tất cả access tokens để bắt buộc đăng nhập lại
+        tokenService.revokeAllUserTokens(user);
+        
+        log.info("Password changed successfully for user: {}", user.getEmail());
+        return "Đổi mật khẩu thành công! Vui lòng đăng nhập lại.";
     }
     
     // Helper methods

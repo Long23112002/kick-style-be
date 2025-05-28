@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.LoginRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.RegisterRequest;
+import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.ChangePasswordRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.AuthResponse;
 import org.longg.nh.kickstyleecommerce.domain.services.auth.AuthService;
@@ -71,5 +72,15 @@ public class AuthController {
     String token = JwtUtils.extractTokenFromHeader(authHeader);
     UserResponse userResponse = authService.getCurrentUser(token);
     return ResponseEntity.ok(userResponse);
+  }
+
+  /** Đổi mật khẩu */
+  @PostMapping("/change-password")
+  public ResponseEntity<String> changePassword(
+      @RequestHeader("Authorization") String authHeader,
+      @Valid @RequestBody ChangePasswordRequest request) {
+    String token = JwtUtils.extractTokenFromHeader(authHeader);
+    String result = authService.changePassword(token, request);
+    return ResponseEntity.ok(result);
   }
 }
