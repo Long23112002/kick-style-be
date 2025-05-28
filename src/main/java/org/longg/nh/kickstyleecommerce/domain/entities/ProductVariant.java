@@ -16,7 +16,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Where(clause = "is_deleted = false")
-@SQLDelete(sql = "UPDATE product_variants SET is_delexted = true WHERE id = ?")
+@SQLDelete(sql = "UPDATE products.product_variants SET is_delexted = true WHERE id = ?")
 public class ProductVariant {
 
   @Id
