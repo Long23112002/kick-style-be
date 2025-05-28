@@ -1,7 +1,5 @@
 package org.longg.nh.kickstyleecommerce.domain.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import lombok.*;
 import jakarta.persistence.*;

@@ -3,11 +3,13 @@ package org.longg.nh.kickstyleecommerce.domain.services.products;
 import com.eps.shared.interfaces.persistence.IBasePersistence;
 import com.eps.shared.interfaces.services.IBaseService;
 import com.eps.shared.models.HeaderContext;
+import com.eps.shared.models.exceptions.ResponseException;
 import com.eps.shared.utils.functions.PentaConsumer;
 import com.eps.shared.utils.functions.QuadConsumer;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.ProductRequest;
+import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.ProductVariantRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.ProductResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.*;
 import org.longg.nh.kickstyleecommerce.domain.persistence.ProductPersistence;
@@ -15,11 +17,17 @@ import org.longg.nh.kickstyleecommerce.domain.repositories.ProductRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.ProductVariantRepository;
 import org.longg.nh.kickstyleecommerce.domain.utils.SlugUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +46,41 @@ public class ProductService
     return productPersistence;
   }
 
+  /** Validate tên sản phẩm không trùng lặp */
+  private void validateProductName(String name, Long excludeProductId) {
+    String slug = SlugUtils.toSlug(name);
+    boolean exists;
+
+    if (excludeProductId == null) {
+      // Trường hợp create - chỉ cần check slug có tồn tại không
+      exists = productRepository.existsBySlug(slug);
+    } else {
+      // Trường hợp update - check slug có tồn tại nhưng loại trừ product hiện tại
+      exists = productRepository.existsBySlugAndIdNot(slug, excludeProductId);
+    }
+
+    if (exists) {
+      throw new ResponseException(HttpStatus.BAD_REQUEST, "Tên sản phẩm '" + name + "' đã tồn tại");
+    }
+  }
+
+  /** Validate các size trong variants không trùng lặp trong cùng 1 product */
+  private void validateVariantSizes(List<ProductVariantRequest> variants) {
+    Set<String> normalizedSizes = new HashSet<>();
+    
+    for (ProductVariantRequest variant : variants) {
+      // Normalize size: lowercase và trim space
+      String normalizedSize = variant.getSize().toLowerCase().trim();
+      
+      // Check trùng lặp trong cùng request (cùng 1 product)
+      if (!normalizedSizes.add(normalizedSize)) {
+        throw new ResponseException(
+            HttpStatus.BAD_REQUEST,
+            "Size '" + variant.getSize() + "' bị trùng lặp trong danh sách variants của sản phẩm này");
+      }
+    }
+  }
+
   @Override
   public ProductResponse create(
       HeaderContext context,
@@ -46,6 +89,12 @@ public class ProductService
       TriConsumer<HeaderContext, Product, ProductRequest> mappingEntityHandler,
       TriConsumer<HeaderContext, Product, ProductRequest> postHandler,
       BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler) {
+
+    // Validate tên sản phẩm không trùng
+    validateProductName(request.getName(), null);
+
+    // Validate sizes trong variants không trùng
+    validateVariantSizes(request.getVariants());
 
     // Khởi tạo entity Product mới
     Product product = new Product();
@@ -82,7 +131,15 @@ public class ProductService
                   variant.setProduct(product); // Gán product đã có ID
                   variant.setSize(variantReq.getSize());
                   variant.setStockQuantity(variantReq.getStockQuantity());
-                  variant.setPriceAdjustment(variantReq.getPriceAdjustment());
+
+                  // Xử lý priceAdjustment: nếu = 0 hoặc null thì set = 0 (nghĩa là lấy giá từ
+                  // product)
+                  BigDecimal priceAdjustment = variantReq.getPriceAdjustment();
+                  if (priceAdjustment == null) {
+                    priceAdjustment = BigDecimal.ZERO;
+                  }
+                  variant.setPriceAdjustment(priceAdjustment);
+
                   return variant;
                 })
             .collect(Collectors.toList());
@@ -96,44 +153,173 @@ public class ProductService
     }
 
     // ✅ Trả về ProductResponse
-    return new ProductResponse(
-        product.getId(),
-        product.getName(),
-        product.getSlug(),
-        product.getCategory(),
-        product.getImageUrls(),
-        product.getTeam(),
-        product.getMaterial(),
-        product.getSeason(),
-        product.getJerseyType(),
-        product.getIsFeatured(),
-        product.getSlug(),
-        product.getDescription(),
-        product.getPrice(),
-        product.getSalePrice(),
-        product.getCreatedAt(),
-        product.getUpdatedAt(),
-        product.getIsDeleted(),
-        productVariantRepository.findByProductId(product.getId()));
+    return ProductResponse.builder()
+        .id(product.getId())
+        .name(product.getName())
+        .slug(product.getSlug())
+        .category(product.getCategory())
+        .imageUrls(product.getImageUrls())
+        .team(product.getTeam())
+        .material(product.getMaterial())
+        .season(product.getSeason())
+        .jerseyType(product.getJerseyType())
+        .isFeatured(product.getIsFeatured())
+        .code(product.getCode())
+        .description(product.getDescription())
+        .price(product.getPrice())
+        .salePrice(product.getSalePrice())
+        .createdAt(product.getCreatedAt())
+        .updatedAt(product.getUpdatedAt())
+        .isDeleted(product.getIsDeleted())
+        .variants(productVariantRepository.findByProductId(product.getId()))
+        .build();
   }
 
   @Override
   public ProductResponse update(
       HeaderContext context,
-      Long aLong,
+      Long productId,
       ProductRequest request,
       QuadConsumer<HeaderContext, Long, Product, ProductRequest> validationHandler,
       TriConsumer<HeaderContext, Product, ProductRequest> mappingHandler,
       PentaConsumer<HeaderContext, Product, Product, Long, ProductRequest> postHandler,
       BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler) {
-    return IBaseService.super.update(
-        context,
-        aLong,
-        request,
-        validationHandler,
-        mappingHandler,
-        postHandler,
-        mappingResponseHandler);
+
+    // Lấy product hiện tại
+    Product existingProduct =
+        productRepository
+            .findById(productId)
+            .orElseThrow(
+                () ->
+                    new ResponseException(
+                        HttpStatus.BAD_REQUEST, "Product không tồn tại với ID: " + productId));
+
+    // Validate tên sản phẩm không trùng (trừ chính nó)
+    validateProductName(request.getName(), productId);
+
+    // Validate sizes trong variants không trùng
+    validateVariantSizes(request.getVariants());
+
+    // Lưu product cũ để dùng trong post handler
+    Product oldProduct = new Product();
+    oldProduct.setId(existingProduct.getId());
+    oldProduct.setName(existingProduct.getName());
+    oldProduct.setSlug(existingProduct.getSlug());
+    oldProduct.setCode(existingProduct.getCode());
+
+    // Cập nhật thông tin product (KHÔNG update code vì nó là unique identifier)
+    existingProduct.setName(request.getName());
+    existingProduct.setSlug(SlugUtils.toSlug(request.getName()));
+    existingProduct.setDescription(request.getDescription());
+    existingProduct.setImageUrls(request.getImageUrls());
+    existingProduct.setPrice(request.getPrice());
+    existingProduct.setSalePrice(request.getSalePrice());
+    existingProduct.setSeason(request.getSeason());
+    existingProduct.setJerseyType(request.getJerseyType());
+    existingProduct.setIsFeatured(request.getIsFeatured());
+
+    // Lấy các thực thể liên quan
+    Category category = categoryService.getEntityById(context, request.getCategoryId());
+    Team team = teamService.getEntityById(context, request.getTeamId());
+    Material material = materialService.getEntityById(context, request.getMaterialId());
+
+    // Gán các mối quan hệ
+    existingProduct.setCategory(category);
+    existingProduct.setTeam(team);
+    existingProduct.setMaterial(material);
+
+    // Gọi validation handler nếu có
+    if (validationHandler != null) {
+      validationHandler.accept(context, productId, existingProduct, request);
+    }
+
+    // Gọi mapping handler nếu có
+    if (mappingHandler != null) {
+      mappingHandler.accept(context, existingProduct, request);
+    }
+
+    // Lưu product
+    productRepository.save(existingProduct);
+
+    // Cập nhật variants một cách thông minh
+    updateProductVariants(existingProduct, request.getVariants());
+
+    // Gọi post handler nếu có
+    if (postHandler != null) {
+      postHandler.accept(context, existingProduct, oldProduct, productId, request);
+    }
+
+    // Trả về ProductResponse
+    return mappingResponseHandler().apply(context, existingProduct);
+  }
+
+  /**
+   * Cập nhật variants một cách thông minh:
+   * - Cập nhật variants có sẵn
+   * - Thêm variants mới
+   * - Xóa variants không còn trong request
+   */
+  private void updateProductVariants(Product product, List<ProductVariantRequest> variantRequests) {
+    // Lấy danh sách variants hiện tại
+    List<ProductVariant> existingVariants = productVariantRepository.findByProductId(product.getId());
+    
+    // Tạo map để dễ lookup variants hiện tại theo size
+    Map<String, ProductVariant> existingVariantMap = existingVariants.stream()
+        .collect(Collectors.toMap(
+            variant -> variant.getSize().toLowerCase().trim(),
+            variant -> variant
+        ));
+    
+    // Danh sách variants sẽ được lưu
+    List<ProductVariant> variantsToSave = new ArrayList<>();
+    
+    // Danh sách size trong request (normalized)
+    Set<String> requestSizes = new HashSet<>();
+    
+    for (ProductVariantRequest variantReq : variantRequests) {
+      String normalizedSize = variantReq.getSize().toLowerCase().trim();
+      requestSizes.add(normalizedSize);
+      
+      ProductVariant variant = existingVariantMap.get(normalizedSize);
+      
+      if (variant != null) {
+        // Cập nhật variant có sẵn
+        variant.setSize(variantReq.getSize()); // Giữ nguyên case gốc
+        variant.setStockQuantity(variantReq.getStockQuantity());
+        
+        BigDecimal priceAdjustment = variantReq.getPriceAdjustment();
+        if (priceAdjustment == null) {
+          priceAdjustment = BigDecimal.ZERO;
+        }
+        variant.setPriceAdjustment(priceAdjustment);
+      } else {
+        // Tạo variant mới
+        variant = new ProductVariant();
+        variant.setProduct(product);
+        variant.setSize(variantReq.getSize());
+        variant.setStockQuantity(variantReq.getStockQuantity());
+        
+        BigDecimal priceAdjustment = variantReq.getPriceAdjustment();
+        if (priceAdjustment == null) {
+          priceAdjustment = BigDecimal.ZERO;
+        }
+        variant.setPriceAdjustment(priceAdjustment);
+      }
+      
+      variantsToSave.add(variant);
+    }
+    
+    // Xóa các variants không còn trong request
+    List<ProductVariant> variantsToDelete = existingVariants.stream()
+        .filter(variant -> !requestSizes.contains(variant.getSize().toLowerCase().trim()))
+        .collect(Collectors.toList());
+    
+    if (!variantsToDelete.isEmpty()) {
+      productVariantRepository.deleteAll(variantsToDelete);
+    }
+    
+    // Lưu tất cả variants (cập nhật + mới)
+    productVariantRepository.saveAll(variantsToSave);
   }
 
   @Override
@@ -162,6 +348,7 @@ public class ProductService
             .season(product.getSeason())
             .jerseyType(product.getJerseyType())
             .isFeatured(product.getIsFeatured())
+            .code(product.getCode())
             .description(product.getDescription())
             .price(product.getPrice())
             .salePrice(product.getSalePrice())

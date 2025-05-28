@@ -23,7 +23,7 @@ CREATE TABLE product_variants
 (
     id               BIGSERIAL PRIMARY KEY,
     product_id       BIGINT NOT NULL,
-    size             VARCHAR(50) UNIQUE,
+    size             VARCHAR(50),
     price_adjustment NUMERIC(10, 2),
     stock_quantity   INT,
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

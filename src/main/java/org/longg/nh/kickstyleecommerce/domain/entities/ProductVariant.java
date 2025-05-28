@@ -29,7 +29,7 @@ public class ProductVariant {
   @JsonIgnore
   private Product product;
 
-  @Column(unique = true, name = "size")
+  @Column(name = "size")
   private String size;
 
   @Column(name = "price_adjustment")
