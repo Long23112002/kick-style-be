@@ -49,21 +49,20 @@ public class MaterialService
   @Override
   public MaterialResponse update(
       HeaderContext context,
-      Long id,
+      Long aLong,
       MaterialRequest request,
       QuadConsumer<HeaderContext, Long, Material, MaterialRequest> validationHandler,
       TriConsumer<HeaderContext, Material, MaterialRequest> mappingHandler,
       PentaConsumer<HeaderContext, Material, Material, Long, MaterialRequest> postHandler,
       BiFunction<HeaderContext, Material, MaterialResponse> mappingResponseHandler) {
-
     return IBaseService.super.update(
         context,
-        id,
+        aLong,
         request,
         validationHandler,
-        wrapMappingHandlerWithSlug(mappingHandler),
+        mappingHandler,
         postHandler,
-        materialResponseMapper());
+        mappingResponseHandler);
   }
 
   private BiFunction<HeaderContext, Material, MaterialResponse> materialResponseMapper() {

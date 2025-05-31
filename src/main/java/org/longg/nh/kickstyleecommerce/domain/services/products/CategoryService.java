@@ -13,7 +13,6 @@ import org.longg.nh.kickstyleecommerce.domain.entities.Category;
 import org.longg.nh.kickstyleecommerce.domain.persistence.CategoryPersistence;
 import org.longg.nh.kickstyleecommerce.domain.utils.SlugUtils;
 import org.springframework.stereotype.Service;
-
 import java.util.function.BiFunction;
 
 @Service
@@ -46,6 +45,9 @@ public class CategoryService
         categoryResponseMapper());
   }
 
+
+
+
   private BiFunction<HeaderContext, Category, CategoryResponse> categoryResponseMapper() {
     return (context, entity) ->
         CategoryResponse.builder()
@@ -57,24 +59,15 @@ public class CategoryService
             .build();
   }
 
-  @Override
-  public CategoryResponse update(
-      HeaderContext context,
-      Long id,
-      CategoryRequest request,
-      QuadConsumer<HeaderContext, Long, Category, CategoryRequest> validationHandler,
-      TriConsumer<HeaderContext, Category, CategoryRequest> mappingHandler,
-      PentaConsumer<HeaderContext, Category, Category, Long, CategoryRequest> postHandler,
-      BiFunction<HeaderContext, Category, CategoryResponse> mappingResponseHandler) {
 
-    return IBaseService.super.update(
-        context,
-        id,
-        request,
-        validationHandler,
-        wrapMappingHandlerWithSlug(mappingHandler),
-        postHandler,
-        categoryResponseMapper());
+  @Override
+  public CategoryResponse update(HeaderContext context, Long aLong, CategoryRequest request, QuadConsumer<HeaderContext, Long, Category, CategoryRequest> validationHandler, TriConsumer<HeaderContext, Category, CategoryRequest> mappingHandler, PentaConsumer<HeaderContext, Category, Category, Long, CategoryRequest> postHandler, BiFunction<HeaderContext, Category, CategoryResponse> mappingResponseHandler) {
+    return IBaseService.super.update(context, aLong, request, validationHandler, mappingHandler, postHandler, mappingResponseHandler);
+  }
+
+  @Override
+  public String[] getSearchFieldNames() {
+    return new String[] {"name"};
   }
 
   private TriConsumer<HeaderContext, Category, CategoryRequest> wrapMappingHandlerWithSlug(

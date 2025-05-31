@@ -52,10 +52,8 @@ public class ProductService
     boolean exists;
 
     if (excludeProductId == null) {
-      // Trường hợp create - chỉ cần check slug có tồn tại không
       exists = productRepository.existsBySlug(slug);
     } else {
-      // Trường hợp update - check slug có tồn tại nhưng loại trừ product hiện tại
       exists = productRepository.existsBySlugAndIdNot(slug, excludeProductId);
     }
 
@@ -64,14 +62,20 @@ public class ProductService
     }
   }
 
+  @Override
+  public void postCreateHandler(HeaderContext context, Product entity, ProductRequest request) {
+
+    IBaseService.super.postCreateHandler(context, entity, request);
+  }
+
   /** Validate các size trong variants không trùng lặp trong cùng 1 product */
   private void validateVariantSizes(List<ProductVariantRequest> variants) {
     Set<String> normalizedSizes = new HashSet<>();
-    
+
     for (ProductVariantRequest variant : variants) {
       // Normalize size: lowercase và trim space
       String normalizedSize = variant.getSize().toLowerCase().trim();
-      
+
       // Check trùng lặp trong cùng request (cùng 1 product)
       if (!normalizedSizes.add(normalizedSize)) {
         throw new ResponseException(
@@ -177,13 +181,13 @@ public class ProductService
 
   @Override
   public ProductResponse update(
-      HeaderContext context,
-      Long productId,
-      ProductRequest request,
-      QuadConsumer<HeaderContext, Long, Product, ProductRequest> validationHandler,
-      TriConsumer<HeaderContext, Product, ProductRequest> mappingHandler,
-      PentaConsumer<HeaderContext, Product, Product, Long, ProductRequest> postHandler,
-      BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler) {
+          HeaderContext context,
+          Long productId,
+          ProductRequest request,
+          QuadConsumer<HeaderContext, Long, Product, ProductRequest> validationHandler,
+          TriConsumer<HeaderContext, Product, ProductRequest> mappingHandler,
+          PentaConsumer<HeaderContext, Product, Product, Long, ProductRequest> postHandler,
+          BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler) {
 
     // Lấy product hiện tại
     Product existingProduct =
@@ -262,31 +266,31 @@ public class ProductService
   private void updateProductVariants(Product product, List<ProductVariantRequest> variantRequests) {
     // Lấy danh sách variants hiện tại
     List<ProductVariant> existingVariants = productVariantRepository.findByProductId(product.getId());
-    
+
     // Tạo map để dễ lookup variants hiện tại theo size
     Map<String, ProductVariant> existingVariantMap = existingVariants.stream()
         .collect(Collectors.toMap(
             variant -> variant.getSize().toLowerCase().trim(),
             variant -> variant
         ));
-    
+
     // Danh sách variants sẽ được lưu
     List<ProductVariant> variantsToSave = new ArrayList<>();
-    
+
     // Danh sách size trong request (normalized)
     Set<String> requestSizes = new HashSet<>();
-    
+
     for (ProductVariantRequest variantReq : variantRequests) {
       String normalizedSize = variantReq.getSize().toLowerCase().trim();
       requestSizes.add(normalizedSize);
-      
+
       ProductVariant variant = existingVariantMap.get(normalizedSize);
-      
+
       if (variant != null) {
         // Cập nhật variant có sẵn
         variant.setSize(variantReq.getSize()); // Giữ nguyên case gốc
         variant.setStockQuantity(variantReq.getStockQuantity());
-        
+
         BigDecimal priceAdjustment = variantReq.getPriceAdjustment();
         if (priceAdjustment == null) {
           priceAdjustment = BigDecimal.ZERO;
@@ -298,26 +302,26 @@ public class ProductService
         variant.setProduct(product);
         variant.setSize(variantReq.getSize());
         variant.setStockQuantity(variantReq.getStockQuantity());
-        
+
         BigDecimal priceAdjustment = variantReq.getPriceAdjustment();
         if (priceAdjustment == null) {
           priceAdjustment = BigDecimal.ZERO;
         }
         variant.setPriceAdjustment(priceAdjustment);
       }
-      
+
       variantsToSave.add(variant);
     }
-    
+
     // Xóa các variants không còn trong request
     List<ProductVariant> variantsToDelete = existingVariants.stream()
         .filter(variant -> !requestSizes.contains(variant.getSize().toLowerCase().trim()))
         .collect(Collectors.toList());
-    
+
     if (!variantsToDelete.isEmpty()) {
       productVariantRepository.deleteAll(variantsToDelete);
     }
-    
+
     // Lưu tất cả variants (cập nhật + mới)
     productVariantRepository.saveAll(variantsToSave);
   }

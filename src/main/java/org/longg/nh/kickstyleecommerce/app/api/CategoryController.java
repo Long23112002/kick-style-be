@@ -33,6 +33,7 @@ public class CategoryController
   @CheckRole({"ADMIN"})
   public ResponseEntity<CategoryResponse> create(
       HeaderContext context, Map<String, Object> headers, CategoryRequest request) {
+    System.out.println("CategoryController.create called with request: " + request);
     return IBaseApi.super.create(context, headers, request);
   }
 
