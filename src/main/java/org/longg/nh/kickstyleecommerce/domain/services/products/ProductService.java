@@ -6,6 +6,10 @@ import com.eps.shared.models.HeaderContext;
 import com.eps.shared.models.exceptions.ResponseException;
 import com.eps.shared.utils.functions.PentaConsumer;
 import com.eps.shared.utils.functions.QuadConsumer;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.ProductRequest;
@@ -17,6 +21,7 @@ import org.longg.nh.kickstyleecommerce.domain.repositories.ProductRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.ProductVariantRepository;
 import org.longg.nh.kickstyleecommerce.domain.utils.SlugUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -80,7 +85,9 @@ public class ProductService
       if (!normalizedSizes.add(normalizedSize)) {
         throw new ResponseException(
             HttpStatus.BAD_REQUEST,
-            "Size '" + variant.getSize() + "' bị trùng lặp trong danh sách variants của sản phẩm này");
+            "Size '"
+                + variant.getSize()
+                + "' bị trùng lặp trong danh sách variants của sản phẩm này");
       }
     }
   }
@@ -181,13 +188,13 @@ public class ProductService
 
   @Override
   public ProductResponse update(
-          HeaderContext context,
-          Long productId,
-          ProductRequest request,
-          QuadConsumer<HeaderContext, Long, Product, ProductRequest> validationHandler,
-          TriConsumer<HeaderContext, Product, ProductRequest> mappingHandler,
-          PentaConsumer<HeaderContext, Product, Product, Long, ProductRequest> postHandler,
-          BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler) {
+      HeaderContext context,
+      Long productId,
+      ProductRequest request,
+      QuadConsumer<HeaderContext, Long, Product, ProductRequest> validationHandler,
+      TriConsumer<HeaderContext, Product, ProductRequest> mappingHandler,
+      PentaConsumer<HeaderContext, Product, Product, Long, ProductRequest> postHandler,
+      BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler) {
 
     // Lấy product hiện tại
     Product existingProduct =
@@ -258,21 +265,20 @@ public class ProductService
   }
 
   /**
-   * Cập nhật variants một cách thông minh:
-   * - Cập nhật variants có sẵn
-   * - Thêm variants mới
-   * - Xóa variants không còn trong request
+   * Cập nhật variants một cách thông minh: - Cập nhật variants có sẵn - Thêm variants mới - Xóa
+   * variants không còn trong request
    */
   private void updateProductVariants(Product product, List<ProductVariantRequest> variantRequests) {
     // Lấy danh sách variants hiện tại
-    List<ProductVariant> existingVariants = productVariantRepository.findByProductId(product.getId());
+    List<ProductVariant> existingVariants =
+        productVariantRepository.findByProductId(product.getId());
 
     // Tạo map để dễ lookup variants hiện tại theo size
-    Map<String, ProductVariant> existingVariantMap = existingVariants.stream()
-        .collect(Collectors.toMap(
-            variant -> variant.getSize().toLowerCase().trim(),
-            variant -> variant
-        ));
+    Map<String, ProductVariant> existingVariantMap =
+        existingVariants.stream()
+            .collect(
+                Collectors.toMap(
+                    variant -> variant.getSize().toLowerCase().trim(), variant -> variant));
 
     // Danh sách variants sẽ được lưu
     List<ProductVariant> variantsToSave = new ArrayList<>();
@@ -314,9 +320,10 @@ public class ProductService
     }
 
     // Xóa các variants không còn trong request
-    List<ProductVariant> variantsToDelete = existingVariants.stream()
-        .filter(variant -> !requestSizes.contains(variant.getSize().toLowerCase().trim()))
-        .collect(Collectors.toList());
+    List<ProductVariant> variantsToDelete =
+        existingVariants.stream()
+            .filter(variant -> !requestSizes.contains(variant.getSize().toLowerCase().trim()))
+            .collect(Collectors.toList());
 
     if (!variantsToDelete.isEmpty()) {
       productVariantRepository.deleteAll(variantsToDelete);
@@ -338,6 +345,43 @@ public class ProductService
     return IBaseService.super.getAll(
         context, search, page, pageSize, sort, filter, mappingResponseHandler());
   }
+
+
+
+  @Override
+  public List<Predicate> buildFilterQuery(
+          Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder cb, Map<String, Object> filter) {
+
+    List<Predicate> predicates = new ArrayList<>(IBaseService.super.buildFilterQuery(root, query, cb, filter));
+
+    boolean hasMin = filter.containsKey("minPrice");
+    boolean hasMax = filter.containsKey("maxPrice");
+
+    try {
+      if (hasMin && hasMax) {
+        Double minPrice = Double.parseDouble(filter.get("minPrice").toString());
+        Double maxPrice = Double.parseDouble(filter.get("maxPrice").toString());
+        predicates.add(cb.between(root.get("price"), minPrice, maxPrice));
+      } else if (hasMin) {
+        Double minPrice = Double.parseDouble(filter.get("minPrice").toString());
+        predicates.add(cb.greaterThanOrEqualTo(root.get("price"), minPrice));
+      } else if (hasMax) {
+        Double maxPrice = Double.parseDouble(filter.get("maxPrice").toString());
+        predicates.add(cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+      }
+    } catch (NumberFormatException e) {
+      if (hasMin && hasMax) {
+        throw new ResponseException(HttpStatus.BAD_REQUEST, "Giá min hoặc max không hợp lệ");
+      } else if (hasMin) {
+        throw new ResponseException(HttpStatus.BAD_REQUEST, "Giá min không hợp lệ");
+      } else if (hasMax) {
+        throw new ResponseException(HttpStatus.BAD_REQUEST, "Giá max không hợp lệ");
+      }
+    }
+
+    return predicates;
+  }
+
 
   private BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler() {
     return (context, product) ->
