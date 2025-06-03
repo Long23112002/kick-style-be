@@ -146,6 +146,18 @@
                         </configuration>
                     </execution>
 
+
+                    <execution>
+                        <id>carts</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                        <configuration>
+                            <configFile>services/carts/config/dev/flyway.conf</configFile>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
             <plugin>
