@@ -7,6 +7,8 @@ import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.ProductRequ
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.ProductResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.Product;
 import org.longg.nh.kickstyleecommerce.domain.services.products.ProductService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,5 +24,10 @@ public class ProductController
   public IBaseService<Product, Long, ProductResponse, ProductRequest, ProductResponse>
       getService() {
     return productService;
+  }
+
+  @GetMapping("/detail/{id}")
+  public ProductResponse getProductById(@PathVariable Long id) {
+    return productService.findById(id);
   }
 }

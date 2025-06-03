@@ -333,6 +333,18 @@ public class ProductService
     productVariantRepository.saveAll(variantsToSave);
   }
 
+  public ProductResponse findById(Long id){
+    Product product =
+        productRepository
+            .findById(id)
+            .orElseThrow(
+                () ->
+                    new ResponseException(
+                        HttpStatus.BAD_REQUEST, "Product không tồn tại với ID: " + id));
+
+    return mappingResponseHandler().apply(null, product);
+  }
+
   @Override
   public Page<ProductResponse> getAll(
       HeaderContext context,

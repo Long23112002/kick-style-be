@@ -9,9 +9,11 @@ import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.ChangePasswordR
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.AuthResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.AccessToken;
+import org.longg.nh.kickstyleecommerce.domain.entities.Cart;
 import org.longg.nh.kickstyleecommerce.domain.entities.Role;
 import org.longg.nh.kickstyleecommerce.domain.entities.User;
 
+import org.longg.nh.kickstyleecommerce.domain.repositories.CartRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.RoleRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.UserRepository;
 import org.longg.nh.kickstyleecommerce.domain.utils.JwtUtils;
@@ -29,6 +31,7 @@ public class AuthService {
     private final PasswordEncoderService passwordEncoderService;
     private final TokenService tokenService;
     private final EmailService emailService;
+    private final CartRepository cartRepository;
     
     private static final String DEFAULT_ROLE_NAME = "USER";
     
@@ -61,7 +64,9 @@ public class AuthService {
                 .build();
         
         User savedUser = userRepository.save(user);
-        
+
+
+        initializeCart(savedUser);
         // Tạo verification token và gửi email
         AccessToken verificationToken = tokenService.generateVerificationToken(savedUser);
         emailService.sendVerificationEmail(
@@ -72,6 +77,12 @@ public class AuthService {
         
         log.info("User registered successfully: {}", savedUser.getEmail());
         return "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.";
+    }
+
+    private void initializeCart(User user) {
+        Cart cart = new Cart();
+        cart.setUserId(user.getId());
+        cartRepository.save(cart);
     }
     
     /**

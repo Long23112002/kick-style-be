@@ -14,6 +14,7 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "cart_item", schema = "carts")
+@Entity
 public class CartItem {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

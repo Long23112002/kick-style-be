@@ -6,12 +6,14 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "cart", schema = "carts")
+@Entity
 public class Cart {
 
   @Id
@@ -31,4 +33,7 @@ public class Cart {
   @Column(name = "updated_at", nullable = false)
   @UpdateTimestamp
   private Timestamp updatedAt;
+
+  @OneToMany(mappedBy = "cartId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  private List<CartItem> cartItems;
 }
