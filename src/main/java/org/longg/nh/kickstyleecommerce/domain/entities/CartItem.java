@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 import java.sql.Timestamp;
 
@@ -23,8 +25,11 @@ public class CartItem {
   @Column(name = "cart_id", nullable = false)
   private Long cartId;
 
-  @Column(name = "variant_id", nullable = false)
-  private Long variantId;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "variant_id")
+  @NotFound(action = NotFoundAction.IGNORE)
+  private ProductVariant variant;
+
 
   @Column(name = "quantity")
   private Integer quantity;

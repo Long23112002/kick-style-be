@@ -26,7 +26,6 @@ public class ProductVariant {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "product_id", nullable = false)
   @NotFound(action = NotFoundAction.IGNORE)
-  @JsonIgnore
   private Product product;
 
   @Column(name = "size")

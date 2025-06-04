@@ -12,6 +12,8 @@ import org.longg.nh.kickstyleecommerce.domain.repositories.ProductVariantReposit
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @RequiredArgsConstructor
 @Service
 public class CartItemService {
@@ -21,12 +23,36 @@ public class CartItemService {
   private final ProductVariantRepository productVariantRepository;
 
   public CartItem create(CartItemRequest request) {
+    ProductVariant productVariant = findVariantById(request.getVariantId());
+
+    if (productVariant.getStockQuantity() < request.getQuantity()) {
+      throw new ResponseException(
+              HttpStatus.BAD_REQUEST, "Không đủ số lượng");
+    }
+
+    Optional<CartItem> existingItemOpt = cartItemRepository
+            .findByCartIdAndVariantId(request.getCartId(), request.getVariantId());
+
+    if (existingItemOpt.isPresent()) {
+      CartItem existingItem = existingItemOpt.get();
+      int newQuantity = existingItem.getQuantity() + request.getQuantity();
+
+      if (productVariant.getStockQuantity() < newQuantity) {
+        throw new ResponseException(
+                HttpStatus.BAD_REQUEST, "Không đủ số lượng sau khi cộng dồn");
+      }
+
+      existingItem.setQuantity(newQuantity);
+      return cartItemRepository.save(existingItem);
+    }
+
     CartItem cartItem = new CartItem();
-    cartItem.setCartId(findById(request.getCartId()).getId());
-    cartItem.setVariantId(findVariantById(request.getVariantId()).getId());
+    cartItem.setCartId(request.getCartId());
+    cartItem.setVariant(productVariant);
     cartItem.setQuantity(request.getQuantity());
     return cartItemRepository.save(cartItem);
   }
+
 
   public void delete(Long id) {
     CartItem cartItem =
@@ -40,16 +66,48 @@ public class CartItemService {
   }
 
   public CartItem update(Long id, CartItemRequest request) {
-    CartItem cartItem =
-        cartItemRepository
-            .findById(id)
-            .orElseThrow(
-                () ->
-                    new ResponseException(
-                        HttpStatus.BAD_REQUEST, "Cart item not found with id: " + id));
+    ProductVariant productVariant = findVariantById(request.getVariantId());
+
+    if (productVariant.getStockQuantity() < request.getQuantity()) {
+      throw new ResponseException(
+              HttpStatus.BAD_REQUEST, "Không đủ số lượng: " + request.getVariantId());
+    }
+
+    CartItem cartItem = cartItemRepository.findById(id)
+            .orElseThrow(() -> new ResponseException(
+                    HttpStatus.BAD_REQUEST, "Cart item not found with id: " + id));
+
+    // Nếu variantId không đổi → chỉ update quantity
+    if (cartItem.getVariant().getId().equals(request.getVariantId())) {
+      cartItem.setQuantity(request.getQuantity());
+      return cartItemRepository.save(cartItem);
+    }
+
+    // Nếu variantId thay đổi → kiểm tra xem đã tồn tại item khác chưa
+    Optional<CartItem> existingOpt = cartItemRepository
+            .findByCartIdAndVariantId(cartItem.getCartId(), request.getVariantId());
+
+    if (existingOpt.isPresent()) {
+      CartItem existing = existingOpt.get();
+      int newQuantity = existing.getQuantity() + request.getQuantity();
+
+      if (productVariant.getStockQuantity() < newQuantity) {
+        throw new ResponseException(
+                HttpStatus.BAD_REQUEST, "Không đủ số lượng sau khi gộp");
+      }
+
+      // Cập nhật item đã tồn tại với tổng số lượng
+      existing.setQuantity(newQuantity);
+      cartItemRepository.delete(cartItem); // xóa item cũ (ID cũ)
+      return cartItemRepository.save(existing);
+    }
+
+    // Nếu chưa tồn tại item với variantId mới → cập nhật variant và quantity
+    cartItem.setVariant(productVariant);
     cartItem.setQuantity(request.getQuantity());
     return cartItemRepository.save(cartItem);
   }
+
 
   public Cart findById(Long id) {
     return cartRepository
