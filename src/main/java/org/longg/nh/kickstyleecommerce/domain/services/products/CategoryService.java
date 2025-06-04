@@ -46,8 +46,6 @@ public class CategoryService
   }
 
 
-
-
   private BiFunction<HeaderContext, Category, CategoryResponse> categoryResponseMapper() {
     return (context, entity) ->
         CategoryResponse.builder()

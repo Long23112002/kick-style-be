@@ -274,7 +274,7 @@ public class AuthService {
                 .address(user.getAddress())
                 .district(user.getDistrict())
                 .ward(user.getWard())
-                .roleName(user.getRole() != null ? user.getRole().getName() : null)
+                .role(user.getRole())
                 .avatarUrl(user.getAvatarUrl())
                 .gender(user.getGender())
                 .isVerify(user.getIsVerify())

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.longg.nh.kickstyleecommerce.domain.entities.Role;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.Gender;
 
 import java.sql.Timestamp;
@@ -21,7 +22,7 @@ public class UserResponse {
   private String address;
   private String district;
   private String ward;
-  private String roleName;
+  private Role role;
   private String avatarUrl;
   private Gender gender;
   private Boolean isVerify;
