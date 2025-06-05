@@ -25,6 +25,7 @@ public class UserResponse {
   private Role role;
   private String avatarUrl;
   private Gender gender;
+  private Long cartId;
   private Boolean isVerify;
   private Timestamp createdAt;
   private Timestamp updatedAt;
