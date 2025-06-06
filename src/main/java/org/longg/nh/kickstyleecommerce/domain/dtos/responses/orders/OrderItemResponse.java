@@ -1,0 +1,24 @@
+package org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders;
+
+import lombok.*;
+import org.longg.nh.kickstyleecommerce.domain.entities.ProductVariant;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Map;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class OrderItemResponse {
+
+  private Long id;
+  private ProductVariant variant;
+  private String productName;
+  private Map<String, Object> variantInfo;
+  private Integer quantity;
+  private BigDecimal unitPrice;
+  private BigDecimal totalPrice;
+  private Timestamp createdAt;
+} 
