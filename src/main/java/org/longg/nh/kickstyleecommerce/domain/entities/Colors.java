@@ -32,12 +32,6 @@ public class Colors {
   @Column(name = "name", nullable = false)
   private String name;
 
-  @Column(name = "hex_code", nullable = false, unique = true)
-  private String hexCode;
-
-  @Column(name = "display_order")
-  private Integer displayOrder;
-
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private Timestamp createdAt;

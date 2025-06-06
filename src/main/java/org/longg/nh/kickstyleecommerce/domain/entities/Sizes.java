@@ -32,9 +32,6 @@ public class Sizes {
   @Column(name = "name", nullable = false, unique = true)
   private String name;
 
-  @Column(name = "display_order")
-  private Integer displayOrder;
-
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private Timestamp createdAt;

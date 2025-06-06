@@ -142,7 +142,6 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
       Map<String, Object> variantInfo = new HashMap<>();
       variantInfo.put("sizeName", variant.getSize().getName());
       variantInfo.put("colorName", variant.getColor().getName());
-      variantInfo.put("colorHexCode", variant.getColor().getHexCode());
       variantInfo.put("productCode", variant.getProduct().getCode());
 
       return OrderItem.builder()
