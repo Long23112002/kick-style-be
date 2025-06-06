@@ -17,6 +17,8 @@ import org.longg.nh.kickstyleecommerce.domain.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -54,6 +56,8 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
         .maximumDiscount(request.getMaximumDiscount())
         .maxUsageCount(request.getMaxUsageCount())
         .usedCount(0)
+        .startDate(request.getValidFrom())
+        .endDate(request.getValidTo())
         .validFrom(request.getValidFrom())
         .validTo(request.getValidTo())
         .userSpecific(request.getUserSpecific())
@@ -102,6 +106,8 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
     coupon.setMinimumAmount(request.getMinimumAmount());
     coupon.setMaximumDiscount(request.getMaximumDiscount());
     coupon.setMaxUsageCount(request.getMaxUsageCount());
+    coupon.setStartDate(request.getValidFrom());
+    coupon.setEndDate(request.getValidTo());
     coupon.setValidFrom(request.getValidFrom());
     coupon.setValidTo(request.getValidTo());
     coupon.setUserSpecific(request.getUserSpecific());
@@ -187,6 +193,8 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
         .maximumDiscount(coupon.getMaximumDiscount())
         .maxUsageCount(coupon.getMaxUsageCount())
         .usedCount(coupon.getUsedCount())
+        .startDate(coupon.getStartDate())
+        .endDate(coupon.getEndDate())
         .validFrom(coupon.getValidFrom())
         .validTo(coupon.getValidTo())
         .userSpecific(coupon.getUserSpecific())
@@ -204,5 +212,35 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
 
   private BiFunction<HeaderContext, Coupon, CouponResponse> mappingResponseHandler() {
     return (context, coupon) -> mapToCouponResponse(coupon);
+  }
+
+  // Paginated methods
+  public Page<CouponResponse> getAllCoupons(Pageable pageable) {
+    return couponRepository.findAll(pageable)
+        .map(this::mapToCouponResponse);
+  }
+
+  public Page<CouponResponse> getActiveCoupons(Pageable pageable) {
+    Timestamp now = new Timestamp(System.currentTimeMillis());
+    return couponRepository.findActiveCoupons(now, pageable)
+        .map(this::mapToCouponResponse);
+  }
+
+  public Page<CouponResponse> getValidCouponsForUser(Long userId, Pageable pageable) {
+    Timestamp now = new Timestamp(System.currentTimeMillis());
+    return couponRepository.findValidCouponsForUser(userId, now, pageable)
+        .map(this::mapToCouponResponse);
+  }
+
+  // Search and filter methods
+  public Page<CouponResponse> searchCoupons(String code, String name, Boolean isActive, Pageable pageable) {
+    return couponRepository.findCouponsWithFilters(code, name, isActive, pageable)
+        .map(this::mapToCouponResponse);
+  }
+
+  public Page<CouponResponse> searchActiveCoupons(String code, String name, Pageable pageable) {
+    Timestamp now = new Timestamp(System.currentTimeMillis());
+    return couponRepository.findActiveCouponsWithFilters(code, name, now, pageable)
+        .map(this::mapToCouponResponse);
   }
 } 

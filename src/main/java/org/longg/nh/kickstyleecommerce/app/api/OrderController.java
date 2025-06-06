@@ -92,11 +92,12 @@ public class OrderController {
       @ApiResponse(responseCode = "200", description = "Lấy danh sách đơn hàng thành công")
   })
   @GetMapping
-  public ResponseEntity<Page<OrderResponse>> getAllOrders(
+  public ResponseEntity<List<OrderResponse>> getAllOrders(
       @Parameter(hidden = true) HeaderContext context,
       @Parameter(description = "Thông tin phân trang") Pageable pageable) {
-    Page<OrderResponse> responses = orderService.getAll(context, null, null, null, null, null, 
+    Page<OrderResponse> page = orderService.getAll(context, null, null, null, null, null, 
         (ctx, order) -> orderService.mapToOrderResponse(order));
+    List<OrderResponse> responses = page.getContent();
     return ResponseEntity.ok(responses);
   }
 

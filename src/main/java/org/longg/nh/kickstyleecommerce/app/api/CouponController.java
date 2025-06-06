@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.coupons.CouponRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.coupons.CouponResponse;
 import org.longg.nh.kickstyleecommerce.domain.services.coupons.CouponService;
+import org.longg.nh.kickstyleecommerce.domain.services.coupons.CouponSchedulerService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ import java.util.List;
 public class CouponController {
 
   private final CouponService couponService;
+  private final CouponSchedulerService couponSchedulerService;
 
   @Operation(summary = "Tạo mã coupon mới", description = "Tạo một mã giảm giá mới với các thông tin chi tiết")
   @ApiResponses(value = {
@@ -65,31 +67,62 @@ public class CouponController {
   public ResponseEntity<Page<CouponResponse>> getAllCoupons(
       @Parameter(hidden = true) HeaderContext context,
       @Parameter(description = "Thông tin phân trang") Pageable pageable) {
-    Page<CouponResponse> responses = couponService.getAll(context, null, null, null, null, null, 
-        (ctx, coupon) -> couponService.mapToCouponResponse(coupon));
+    Page<CouponResponse> responses = couponService.getAllCoupons(pageable);
     return ResponseEntity.ok(responses);
   }
 
-  @Operation(summary = "Lấy danh sách coupon đang hoạt động", description = "Lấy danh sách các mã coupon đang có hiệu lực")
+  @Operation(summary = "Lấy danh sách coupon đang hoạt động", description = "Lấy danh sách các mã coupon đang có hiệu lực với phân trang")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy danh sách coupon hoạt động thành công")
   })
   @GetMapping("/active")
-  public ResponseEntity<List<CouponResponse>> getActiveCoupons(@Parameter(hidden = true) HeaderContext context) {
-    List<CouponResponse> responses = couponService.getActiveCoupons();
+  public ResponseEntity<Page<CouponResponse>> getActiveCoupons(
+      @Parameter(hidden = true) HeaderContext context,
+      @Parameter(description = "Thông tin phân trang") Pageable pageable) {
+    Page<CouponResponse> responses = couponService.getActiveCoupons(pageable);
     return ResponseEntity.ok(responses);
   }
 
-  @Operation(summary = "Lấy coupon khả dụng cho người dùng", description = "Lấy danh sách mã coupon mà người dùng có thể sử dụng")
+  @Operation(summary = "Lấy coupon khả dụng cho người dùng", description = "Lấy danh sách mã coupon mà người dùng có thể sử dụng với phân trang")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy danh sách coupon khả dụng thành công"),
       @ApiResponse(responseCode = "404", description = "Không tìm thấy người dùng")
   })
   @GetMapping("/user/{userId}")
-  public ResponseEntity<List<CouponResponse>> getValidCouponsForUser(
+  public ResponseEntity<Page<CouponResponse>> getValidCouponsForUser(
       @Parameter(hidden = true) HeaderContext context,
-      @PathVariable @Parameter(description = "ID người dùng") Long userId) {
-    List<CouponResponse> responses = couponService.getValidCouponsForUser(userId);
+      @PathVariable @Parameter(description = "ID người dùng") Long userId,
+      @Parameter(description = "Thông tin phân trang") Pageable pageable) {
+    Page<CouponResponse> responses = couponService.getValidCouponsForUser(userId, pageable);
+    return ResponseEntity.ok(responses);
+  }
+
+  @Operation(summary = "Tìm kiếm và lọc coupon", description = "Tìm kiếm và lọc mã coupon theo code, tên và trạng thái với phân trang")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Tìm kiếm coupon thành công")
+  })
+  @GetMapping("/search")
+  public ResponseEntity<Page<CouponResponse>> searchCoupons(
+      @Parameter(hidden = true) HeaderContext context,
+      @RequestParam(required = false) @Parameter(description = "Mã coupon (tìm kiếm gần đúng)") String code,
+      @RequestParam(required = false) @Parameter(description = "Tên coupon (tìm kiếm gần đúng)") String name,
+      @RequestParam(required = false) @Parameter(description = "Trạng thái hoạt động") Boolean isActive,
+      @Parameter(description = "Thông tin phân trang") Pageable pageable) {
+    Page<CouponResponse> responses = couponService.searchCoupons(code, name, isActive, pageable);
+    return ResponseEntity.ok(responses);
+  }
+
+  @Operation(summary = "Tìm kiếm coupon đang hoạt động", description = "Tìm kiếm mã coupon đang có hiệu lực theo code và tên với phân trang")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Tìm kiếm coupon hoạt động thành công")
+  })
+  @GetMapping("/active/search")
+  public ResponseEntity<Page<CouponResponse>> searchActiveCoupons(
+      @Parameter(hidden = true) HeaderContext context,
+      @RequestParam(required = false) @Parameter(description = "Mã coupon (tìm kiếm gần đúng)") String code,
+      @RequestParam(required = false) @Parameter(description = "Tên coupon (tìm kiếm gần đúng)") String name,
+      @Parameter(description = "Thông tin phân trang") Pageable pageable) {
+    Page<CouponResponse> responses = couponService.searchActiveCoupons(code, name, pageable);
     return ResponseEntity.ok(responses);
   }
 
@@ -148,5 +181,15 @@ public class CouponController {
       @PathVariable @Parameter(description = "ID coupon cần xóa") Long id) {
     couponService.deleteById(context, id);
     return ResponseEntity.ok().build();
+  }
+
+  @Operation(summary = "Tự động vô hiệu hóa coupon hết hạn", description = "Kích hoạt thủ công quá trình vô hiệu hóa các mã coupon đã hết hạn")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Hoàn thành quá trình vô hiệu hóa coupon hết hạn")
+  })
+  @PostMapping("/deactivate-expired")
+  public ResponseEntity<String> deactivateExpiredCoupons(@Parameter(hidden = true) HeaderContext context) {
+    int deactivatedCount = couponSchedulerService.manualDeactivateExpiredCoupons();
+    return ResponseEntity.ok("Đã vô hiệu hóa " + deactivatedCount + " coupon hết hạn");
   }
 } 

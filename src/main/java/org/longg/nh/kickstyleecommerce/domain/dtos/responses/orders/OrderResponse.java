@@ -1,8 +1,6 @@
 package org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders;
 
 import lombok.*;
-import org.longg.nh.kickstyleecommerce.domain.entities.PaymentMethod;
-import org.longg.nh.kickstyleecommerce.domain.entities.User;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.OrderStatus;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
 
@@ -17,7 +15,9 @@ import java.util.List;
 public class OrderResponse {
 
   private Long id;
-  private User user;
+  private Long userId;
+  private String userFullName;
+  private String userEmail;
   private String code;
   private OrderStatus status;
   private String customerName;
@@ -29,7 +29,8 @@ public class OrderResponse {
   private BigDecimal subtotal;
   private BigDecimal discountAmount;
   private BigDecimal totalAmount;
-  private PaymentMethod paymentMethod;
+  private Long paymentMethodId;
+  private String paymentMethodName;
   private PaymentStatus paymentStatus;
   private String couponCode;
   private String note;
