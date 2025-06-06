@@ -5,6 +5,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import org.hibernate.annotations.*;
 import org.hibernate.type.SqlTypes;
+import org.longg.nh.kickstyleecommerce.domain.entities.enums.Status;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -63,6 +64,10 @@ public class Product {
 
   private BigDecimal price;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false)
+  private Status status;
+
   @Column(name = "sale_price")
   private BigDecimal salePrice;
 
@@ -76,5 +81,4 @@ public class Product {
 
   @Column(name = "is_deleted")
   private Boolean isDeleted = false;
-
 }

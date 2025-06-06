@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.longg.nh.kickstyleecommerce.domain.entities.enums.Status;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,7 +23,7 @@ public class ProductRequest {
   @NotNull(message = "Danh mục không được để trống")
   private Long categoryId;
 
-//  @NotBlank(message = "URL hình ảnh không được để trống")
+  //  @NotBlank(message = "URL hình ảnh không được để trống")
   private List<String> imageUrls;
 
   @NotNull(message = "ID đội bóng không được để trống")
@@ -30,6 +31,9 @@ public class ProductRequest {
 
   @NotNull(message = "ID chất liệu không được để trống")
   private Long materialId;
+
+  // Status sẽ được tự động quản lý dựa trên stockQuantity của variants
+  private Status status;
 
   private String season;
 

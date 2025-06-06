@@ -2,9 +2,11 @@ package org.longg.nh.kickstyleecommerce.domain.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import jakarta.persistence.*;
 import org.hibernate.annotations.*;
+import org.longg.nh.kickstyleecommerce.domain.entities.enums.Status;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -28,8 +30,19 @@ public class ProductVariant {
   @NotFound(action = NotFoundAction.IGNORE)
   private Product product;
 
-  @Column(name = "size")
-  private String size;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "size_id", nullable = false)
+  @NotFound(action = NotFoundAction.IGNORE)
+  private Sizes size;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "color_id", nullable = false)
+  @NotFound(action = NotFoundAction.IGNORE)
+  private Colors color;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false)
+  private Status status;
 
   @Column(name = "price_adjustment")
   private BigDecimal priceAdjustment;

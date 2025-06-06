@@ -13,6 +13,7 @@ import org.longg.nh.kickstyleecommerce.domain.entities.Category;
 import org.longg.nh.kickstyleecommerce.domain.entities.Material;
 import org.longg.nh.kickstyleecommerce.domain.entities.ProductVariant;
 import org.longg.nh.kickstyleecommerce.domain.entities.Team;
+import org.longg.nh.kickstyleecommerce.domain.entities.enums.Status;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -48,6 +49,8 @@ public class ProductResponse {
   private String description;
 
   private BigDecimal price;
+
+  private Status status;
 
   private BigDecimal salePrice;
 
