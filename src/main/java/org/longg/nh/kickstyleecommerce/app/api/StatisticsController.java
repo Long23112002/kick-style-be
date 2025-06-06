@@ -20,7 +20,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/statistics")
+@RequestMapping("/api/v1/statistics")
 @RequiredArgsConstructor
 @Tag(name = "Báo cáo và Thống kê", description = "API báo cáo doanh thu, thống kê bán hàng và phân tích dữ liệu")
 public class StatisticsController {

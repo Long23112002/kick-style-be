@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/coupons")
+@RequestMapping("/api/v1/coupons")
 @RequiredArgsConstructor
 @Tag(name = "Quản lý Coupon", description = "API quản lý mã giảm giá và khuyến mãi")
 public class CouponController {
