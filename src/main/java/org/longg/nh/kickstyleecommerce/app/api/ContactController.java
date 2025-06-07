@@ -42,16 +42,9 @@ public class ContactController {
             @Parameter(description = "Số trang (bắt đầu từ 0)")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Kích thước trang")
-            @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sắp xếp theo trường (mặc định: createdAt)")
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @Parameter(description = "Hướng sắp xếp (asc/desc)")
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @RequestParam(defaultValue = "20") int size) {
 
-        String dbColumnName = mapToDbColumnName(sortBy);
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                   Sort.by(dbColumnName).descending() : Sort.by(dbColumnName).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = PageRequest.of(page, size);
         
         Page<ContactResponse> contacts = contactService.getAllContacts(pageable);
         return ResponseEntity.ok(contacts);
