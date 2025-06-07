@@ -192,6 +192,17 @@
                         </configuration>
                     </execution>
 
+                    <execution>
+                        <id>contacts</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                        <configuration>
+                            <configFile>services/contacts/config/dev/flyway.conf</configFile>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
             <plugin>
