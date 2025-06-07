@@ -1,4 +1,4 @@
-package org.longg.nh.kickstyleecommerce.presentation.controllers;
+package org.longg.nh.kickstyleecommerce.app.api;
 
 import com.eps.shared.models.exceptions.ResponseException;
 import io.swagger.v3.oas.annotations.Operation;
