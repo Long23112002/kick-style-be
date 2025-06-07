@@ -118,7 +118,8 @@ public class ContactService implements IBaseService<Contact, Long, ContactRespon
     public Page<ContactResponse> searchContacts(ContactStatus status, String priority, 
                                               Long assignedTo, String email, 
                                               String fullName, Pageable pageable) {
-        return contactRepository.findContactsWithFilters(status, priority, assignedTo, 
+        String statusStr = status != null ? status.name() : null;
+        return contactRepository.findContactsWithFilters(statusStr, priority, assignedTo, 
                                                         email, fullName, pageable)
                 .map(this::mapToContactResponse);
     }

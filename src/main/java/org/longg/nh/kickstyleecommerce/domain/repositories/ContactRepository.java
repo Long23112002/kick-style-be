@@ -27,14 +27,16 @@ public interface ContactRepository extends IBaseRepository<Contact, Long> {
     // Tìm kiếm contact theo email với phân trang
     Page<Contact> findByEmailOrderByCreatedAtDesc(String email, Pageable pageable);
     
-    // Tìm kiếm với filter
-    @Query("SELECT c FROM Contact c WHERE " +
-           "(:status IS NULL OR c.status = :status) AND " +
+    // Tìm kiếm với filter - sử dụng native query
+    @Query(value = "SELECT * FROM contacts.contacts c WHERE " +
+           "c.is_deleted = false AND " +
+           "(:status IS NULL OR c.status = CAST(:status AS VARCHAR)) AND " +
            "(:priority IS NULL OR c.priority = :priority) AND " +
-           "(:assignedTo IS NULL OR c.assignedTo = :assignedTo) AND " +
-           "(:email IS NULL OR UPPER(c.email) LIKE UPPER(CONCAT('%', :email, '%'))) AND " +
-           "(:fullName IS NULL OR UPPER(c.fullName) LIKE UPPER(CONCAT('%', :fullName, '%')))")
-    Page<Contact> findContactsWithFilters(@Param("status") ContactStatus status,
+           "(:assignedTo IS NULL OR c.assigned_to = :assignedTo) AND " +
+           "(:email IS NULL OR LOWER(c.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+           "(:fullName IS NULL OR LOWER(c.full_name) LIKE LOWER(CONCAT('%', :fullName, '%')))", 
+           nativeQuery = true)
+    Page<Contact> findContactsWithFilters(@Param("status") String status,
                                          @Param("priority") String priority,
                                          @Param("assignedTo") Long assignedTo,
                                          @Param("email") String email,

@@ -48,8 +48,9 @@ public class ContactController {
             @Parameter(description = "Hướng sắp xếp (asc/desc)")
             @RequestParam(defaultValue = "desc") String sortDir) {
 
+        String dbColumnName = mapToDbColumnName(sortBy);
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                   Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                   Sort.by(dbColumnName).descending() : Sort.by(dbColumnName).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<ContactResponse> contacts = contactService.getAllContacts(pageable);
@@ -78,13 +79,34 @@ public class ContactController {
             @Parameter(description = "Hướng sắp xếp")
             @RequestParam(defaultValue = "desc") String sortDir) {
 
+        // Map Java property names to database column names
+        String dbColumnName = mapToDbColumnName(sortBy);
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                   Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                   Sort.by(dbColumnName).descending() : Sort.by(dbColumnName).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<ContactResponse> contacts = contactService.searchContacts(
                 status, priority, assignedTo, email, fullName, pageable);
         return ResponseEntity.ok(contacts);
+    }
+
+    private String mapToDbColumnName(String javaPropertyName) {
+        switch (javaPropertyName) {
+            case "createdAt":
+                return "created_at";
+            case "updatedAt":
+                return "updated_at";
+            case "resolvedAt":
+                return "resolved_at";
+            case "fullName":
+                return "full_name";
+            case "phoneNumber":
+                return "phone_number";
+            case "assignedTo":
+                return "assigned_to";
+            default:
+                return javaPropertyName; // id, email, status, priority, etc.
+        }
     }
 
     @GetMapping("/{id}")
@@ -135,8 +157,9 @@ public class ContactController {
             @Parameter(description = "Hướng sắp xếp")
             @RequestParam(defaultValue = "desc") String sortDir) {
         
+        String dbColumnName = mapToDbColumnName(sortBy);
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                   Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                   Sort.by(dbColumnName).descending() : Sort.by(dbColumnName).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<ContactResponse> history = contactService.getContactHistory(email, pageable);
@@ -152,8 +175,9 @@ public class ContactController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
+        String dbColumnName = mapToDbColumnName(sortBy);
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                   Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                   Sort.by(dbColumnName).descending() : Sort.by(dbColumnName).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<ContactResponse> contacts = contactService.getContactsByStatus(status, pageable);
@@ -168,8 +192,9 @@ public class ContactController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
+        String dbColumnName = mapToDbColumnName(sortBy);
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                   Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                   Sort.by(dbColumnName).descending() : Sort.by(dbColumnName).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<ContactResponse> contacts = contactService.getUnassignedContacts(pageable);
