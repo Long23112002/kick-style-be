@@ -21,5 +21,7 @@ public class ColorResponse {
 
   private Timestamp updatedAt;
 
+  private String hexColor;
+
   private Boolean isDeleted;
 }

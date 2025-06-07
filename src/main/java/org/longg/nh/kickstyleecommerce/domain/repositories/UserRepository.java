@@ -26,7 +26,7 @@ public interface UserRepository extends IBaseRepository<User, Long> {
     @Query(value = "SELECT u.id as userId, u.full_name as fullName, u.email, " +
                    "COALESCE(SUM(CASE WHEN o.payment_status = 'PAID' THEN o.total_amount ELSE 0 END), 0) as totalSpent, " +
                    "COUNT(CASE WHEN o.payment_status = 'PAID' THEN o.id END) as totalOrders " +
-                   "FROM users.users u LEFT JOIN orders.orders o ON u.id = o.user_id " +
+                   "FROM users.user u LEFT JOIN orders.orders o ON u.id = o.user_id " +
                    "WHERE u.is_deleted = false " +
                    "GROUP BY u.id, u.full_name, u.email " +
                    "ORDER BY totalSpent DESC", nativeQuery = true)
@@ -36,7 +36,7 @@ public interface UserRepository extends IBaseRepository<User, Long> {
     @Query(value = "SELECT u.id as userId, u.full_name as fullName, u.email, " +
                    "COALESCE(SUM(CASE WHEN o.payment_status = 'PAID' THEN o.total_amount ELSE 0 END), 0) as totalSpent, " +
                    "COUNT(CASE WHEN o.payment_status = 'PAID' THEN o.id END) as totalOrders " +
-                   "FROM users.users u LEFT JOIN orders.orders o ON u.id = o.user_id " +
+                   "FROM users.user u LEFT JOIN orders.orders o ON u.id = o.user_id " +
                    "WHERE u.is_deleted = false AND (o.created_at IS NULL OR o.created_at BETWEEN :startDate AND :endDate) " +
                    "GROUP BY u.id, u.full_name, u.email " +
                    "ORDER BY totalSpent DESC", nativeQuery = true)
@@ -47,7 +47,7 @@ public interface UserRepository extends IBaseRepository<User, Long> {
     @Query(value = "SELECT u.id as userId, u.full_name as fullName, u.email, " +
                    "COALESCE(SUM(CASE WHEN o.payment_status = 'PAID' THEN o.total_amount ELSE 0 END), 0) as totalSpent, " +
                    "COUNT(CASE WHEN o.payment_status = 'PAID' THEN o.id END) as totalOrders " +
-                   "FROM users.users u LEFT JOIN orders.orders o ON u.id = o.user_id " +
+                   "FROM users.user u LEFT JOIN orders.orders o ON u.id = o.user_id " +
                    "WHERE u.is_deleted = false " +
                    "GROUP BY u.id, u.full_name, u.email " +
                    "HAVING COALESCE(SUM(CASE WHEN o.payment_status = 'PAID' THEN o.total_amount ELSE 0 END), 0) > 0 " +

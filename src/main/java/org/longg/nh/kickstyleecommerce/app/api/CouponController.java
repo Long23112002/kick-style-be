@@ -182,14 +182,4 @@ public class CouponController {
     couponService.deleteById(context, id);
     return ResponseEntity.ok().build();
   }
-
-  @Operation(summary = "Tự động vô hiệu hóa coupon hết hạn", description = "Kích hoạt thủ công quá trình vô hiệu hóa các mã coupon đã hết hạn")
-  @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "Hoàn thành quá trình vô hiệu hóa coupon hết hạn")
-  })
-  @PostMapping("/deactivate-expired")
-  public ResponseEntity<String> deactivateExpiredCoupons(@Parameter(hidden = true) HeaderContext context) {
-    int deactivatedCount = couponSchedulerService.manualDeactivateExpiredCoupons();
-    return ResponseEntity.ok("Đã vô hiệu hóa " + deactivatedCount + " coupon hết hạn");
-  }
 } 
