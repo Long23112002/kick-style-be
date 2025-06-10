@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.payments.PaymentMethodRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.payments.PaymentMethodResponse;
+import org.longg.nh.kickstyleecommerce.domain.entities.PaymentMethod;
 import org.longg.nh.kickstyleecommerce.domain.services.payments.PaymentMethodService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -62,11 +63,9 @@ public class PaymentMethodController {
       @ApiResponse(responseCode = "200", description = "Lấy danh sách phương thức thanh toán thành công")
   })
   @GetMapping
-  public ResponseEntity<Page<PaymentMethodResponse>> getAllPaymentMethods(
-      @Parameter(hidden = true) HeaderContext context,
+  public ResponseEntity<Page<PaymentMethod>> getAllPaymentMethods(
       @Parameter(description = "Thông tin phân trang") Pageable pageable) {
-    Page<PaymentMethodResponse> responses = paymentMethodService.getAll(context, null, null, null, null, null, 
-        (ctx, paymentMethod) -> paymentMethodService.mapToPaymentMethodResponse(paymentMethod));
+    Page<PaymentMethod> responses = paymentMethodService.filter(pageable);
     return ResponseEntity.ok(responses);
   }
 

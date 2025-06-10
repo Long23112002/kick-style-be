@@ -10,6 +10,8 @@ import org.longg.nh.kickstyleecommerce.domain.dtos.responses.payments.PaymentMet
 import org.longg.nh.kickstyleecommerce.domain.entities.PaymentMethod;
 import org.longg.nh.kickstyleecommerce.domain.persistence.PaymentMethodPersistence;
 import org.longg.nh.kickstyleecommerce.domain.repositories.PaymentMethodRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,10 @@ public class PaymentMethodService implements IBaseService<PaymentMethod, Long, P
   @Override
   public IBasePersistence<PaymentMethod, Long> getPersistence() {
     return paymentMethodPersistence;
+  }
+
+  public Page<PaymentMethod> filter(Pageable pageable){
+    return paymentMethodRepository.findAll(pageable);
   }
 
   public PaymentMethodResponse createPaymentMethod(HeaderContext context, PaymentMethodRequest request) {
