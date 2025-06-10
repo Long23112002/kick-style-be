@@ -1,6 +1,7 @@
 package org.longg.nh.kickstyleecommerce.domain.entities;
 
 import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -56,4 +57,7 @@ public class Review {
 
   @Column(name = "is_deleted")
   private Boolean isDeleted = false;
+
+  @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  private List<Answers> answers;
 }
