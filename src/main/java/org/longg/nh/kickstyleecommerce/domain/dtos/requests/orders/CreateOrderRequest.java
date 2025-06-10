@@ -15,6 +15,8 @@ public class CreateOrderRequest {
   @NotNull(message = "Phương thức thanh toán không được để trống")
   private Long paymentMethodId;
 
+  private Long cartId;
+
   @NotBlank(message = "Tên khách hàng không được để trống")
   @Size(max = 255, message = "Tên khách hàng không được vượt quá 255 ký tự")
   private String customerName;

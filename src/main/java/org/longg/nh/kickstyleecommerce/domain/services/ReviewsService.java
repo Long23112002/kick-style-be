@@ -13,7 +13,6 @@ import org.longg.nh.kickstyleecommerce.domain.entities.enums.OrderStatus;
 import org.longg.nh.kickstyleecommerce.domain.persistence.ReviewsPersistence;
 import org.longg.nh.kickstyleecommerce.domain.services.orders.OrderService;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
 @Service

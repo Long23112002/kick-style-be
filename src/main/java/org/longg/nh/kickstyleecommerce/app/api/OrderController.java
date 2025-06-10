@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.orders.CreateOrderRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders.OrderResponse;
+import org.longg.nh.kickstyleecommerce.domain.entities.Order;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.OrderStatus;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
 import org.longg.nh.kickstyleecommerce.domain.services.orders.OrderService;
@@ -29,6 +30,7 @@ import java.util.List;
 public class OrderController {
 
   private final OrderService orderService;
+
 
   @Operation(summary = "Tạo đơn hàng mới", description = "Tạo một đơn hàng mới cho khách hàng với danh sách sản phẩm")
   @ApiResponses(value = {
@@ -53,10 +55,10 @@ public class OrderController {
       @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn hàng")
   })
   @GetMapping("/{id}")
-  public ResponseEntity<OrderResponse> getOrderById(
+  public ResponseEntity<Order> getOrderById(
       @Parameter(hidden = true) HeaderContext context,
       @PathVariable @Parameter(description = "ID của đơn hàng cần lấy") Long id) {
-    OrderResponse response = orderService.getById(context, id);
+    Order response = orderService.finById( id);
     return ResponseEntity.ok(response);
   }
 
@@ -92,13 +94,11 @@ public class OrderController {
       @ApiResponse(responseCode = "200", description = "Lấy danh sách đơn hàng thành công")
   })
   @GetMapping
-  public ResponseEntity<List<OrderResponse>> getAllOrders(
+  public ResponseEntity<Page<OrderResponse>> getAllOrders(
       @Parameter(hidden = true) HeaderContext context,
       @Parameter(description = "Thông tin phân trang") Pageable pageable) {
-    Page<OrderResponse> page = orderService.getAll(context, null, null, null, null, null, 
-        (ctx, order) -> orderService.mapToOrderResponse(order));
-    List<OrderResponse> responses = page.getContent();
-    return ResponseEntity.ok(responses);
+    Page<OrderResponse> page = orderService.getAllOrders(pageable);
+    return ResponseEntity.ok(page);
   }
 
   @Operation(summary = "Cập nhật trạng thái đơn hàng", description = "Cập nhật trạng thái xử lý của đơn hàng")

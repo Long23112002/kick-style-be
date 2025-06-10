@@ -15,12 +15,15 @@ import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
 import org.longg.nh.kickstyleecommerce.domain.persistence.OrderPersistence;
 import org.longg.nh.kickstyleecommerce.domain.repositories.*;
 import org.longg.nh.kickstyleecommerce.domain.services.products.ProductService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +32,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class OrderService implements IBaseService<Order, Long, OrderResponse, CreateOrderRequest, OrderResponse> {
+public class OrderService
+    implements IBaseService<Order, Long, OrderResponse, CreateOrderRequest, OrderResponse> {
 
   private final OrderPersistence orderPersistence;
   private final OrderRepository orderRepository;
@@ -41,21 +45,40 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
   private final CouponUserRepository couponUserRepository;
   private final UserCouponUsageRepository userCouponUsageRepository;
   private final ProductService productService;
+  private final CartItemRepository cartItemRepository;
 
   @Override
   public IBasePersistence<Order, Long> getPersistence() {
     return orderPersistence;
   }
 
+  public Order finById(Long id) {
+    return orderRepository
+        .findById(id)
+        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
+  }
+
+  public Page<OrderResponse> getAllOrders(Pageable pageable) {
+    Page<Order> orders = orderRepository.findAll(pageable);
+    return orders.map(this::mapToOrderResponse);
+  }
+
   @Transactional
   public OrderResponse createOrder(HeaderContext context, CreateOrderRequest request, Long userId) {
     // Lấy user
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "User không tồn tại"));
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "User không tồn tại"));
 
     // Validate payment method
-    PaymentMethod paymentMethod = paymentMethodRepository.findById(request.getPaymentMethodId())
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Phương thức thanh toán không tồn tại"));
+    PaymentMethod paymentMethod =
+        paymentMethodRepository
+            .findById(request.getPaymentMethodId())
+            .orElseThrow(
+                () ->
+                    new ResponseException(
+                        HttpStatus.BAD_REQUEST, "Phương thức thanh toán không tồn tại"));
 
     // Validate và tính toán order items
     List<OrderItem> orderItems = validateAndCreateOrderItems(request.getItems());
@@ -64,7 +87,6 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
     // Xử lý coupon nếu có
     Coupon coupon = null;
     BigDecimal discountAmount = BigDecimal.ZERO;
-    
     if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
       coupon = validateAndUseCoupon(request.getCouponCode(), userId, subtotal);
       discountAmount = coupon.calculateDiscount(subtotal);
@@ -74,25 +96,27 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
     BigDecimal totalAmount = subtotal.subtract(discountAmount);
 
     // Tạo order
-    Order order = Order.builder()
-        .user(user)
-        .code("OD"+orderRepository.getNextSequence())
-        .status(OrderStatus.PENDING)
-        .customerName(request.getCustomerName())
-        .customerEmail(request.getCustomerEmail())
-        .customerPhone(request.getCustomerPhone())
-        .shippingAddress(request.getShippingAddress())
-        .shippingDistrict(request.getShippingDistrict())
-        .shippingWard(request.getShippingWard())
-        .subtotal(subtotal)
-        .discountAmount(discountAmount)
-        .totalAmount(totalAmount)
-        .paymentMethod(paymentMethod)
-        .paymentStatus(PaymentStatus.PENDING)
-        .coupon(coupon)
-        .couponCode(coupon != null ? coupon.getCode() : null)
-        .note(request.getNote())
-        .build();
+    Order order =
+        Order.builder()
+            .user(user)
+            .code("OD" + orderRepository.getNextSequence())
+            .status(OrderStatus.PENDING)
+            .customerName(request.getCustomerName())
+            .customerEmail(request.getCustomerEmail())
+            .customerPhone(request.getCustomerPhone())
+            .shippingAddress(request.getShippingAddress())
+            .shippingDistrict(request.getShippingDistrict())
+            .shippingWard(request.getShippingWard())
+            .subtotal(subtotal)
+            .discountAmount(discountAmount)
+            .totalAmount(totalAmount)
+            .paymentMethod(paymentMethod)
+            .paymentStatus(PaymentStatus.PENDING)
+            .coupon(coupon)
+            .couponCode(coupon != null ? coupon.getCode() : null)
+            .note(request.getNote())
+            .isDeleted(false)
+            .build();
 
     // Lưu order
     order = orderRepository.save(order);
@@ -105,53 +129,102 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
 
     // Cập nhật stock và increment coupon usage
     updateProductStock(orderItems);
-    
+
     if (coupon != null) {
       couponRepository.incrementUsedCount(coupon.getId());
+
       // Lưu lịch sử sử dụng coupon
-      UserCouponUsage usage = UserCouponUsage.builder()
-          .coupon(coupon)
-          .user(user)
-          .order(order)
-          .build();
+      UserCouponUsage usage =
+          UserCouponUsage.builder().coupon(coupon).user(user).order(order).build();
       userCouponUsageRepository.save(usage);
+    }
+
+    // Xử lý cart items - Xóa hoặc trừ số lượng các variant đã order
+    if (request.getCartId() != null) {
+      List<CartItem> cartItems = cartItemRepository.findByCartId(request.getCartId());
+      List<CartItem> cartItemsToDelete = new ArrayList<>();
+      List<CartItem> cartItemsToUpdate = new ArrayList<>();
+
+      for (CartItem cartItem : cartItems) {
+        // Tìm order item tương ứng với cart item này
+        OrderItem matchingOrderItem =
+            orderItems.stream()
+                .filter(
+                    orderItem ->
+                        orderItem.getVariant().getId().equals(cartItem.getVariant().getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (matchingOrderItem != null) {
+          int orderedQuantity = matchingOrderItem.getQuantity();
+          int cartQuantity = cartItem.getQuantity();
+
+          if (cartQuantity <= orderedQuantity) {
+            cartItemsToDelete.add(cartItem);
+          } else {
+            cartItem.setQuantity(cartQuantity - orderedQuantity);
+            cartItemsToUpdate.add(cartItem);
+          }
+        }
+      }
+
+      if (!cartItemsToDelete.isEmpty()) {
+        cartItemRepository.deleteAll(cartItemsToDelete);
+      }
+      if (!cartItemsToUpdate.isEmpty()) {
+        cartItemRepository.saveAll(cartItemsToUpdate);
+      }
     }
 
     return mapToOrderResponse(order);
   }
 
-  private List<OrderItem> validateAndCreateOrderItems(List<CreateOrderRequest.OrderItemRequest> itemRequests) {
-    return itemRequests.stream().map(itemReq -> {
-      ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
-          .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, 
-              "Product variant không tồn tại với ID: " + itemReq.getVariantId()));
+  private List<OrderItem> validateAndCreateOrderItems(
+      List<CreateOrderRequest.OrderItemRequest> itemRequests) {
+    return itemRequests.stream()
+        .map(
+            itemReq -> {
+              ProductVariant variant =
+                  productVariantRepository
+                      .findById(itemReq.getVariantId())
+                      .orElseThrow(
+                          () ->
+                              new ResponseException(
+                                  HttpStatus.BAD_REQUEST,
+                                  "Product variant không tồn tại với ID: "
+                                      + itemReq.getVariantId()));
 
-      // Kiểm tra stock
-      if (variant.getStockQuantity() == null || variant.getStockQuantity() < itemReq.getQuantity()) {
-        throw new ResponseException(HttpStatus.BAD_REQUEST, 
-            "Không đủ hàng trong kho. Còn lại: " + (variant.getStockQuantity() != null ? variant.getStockQuantity() : 0));
-      }
+              // Kiểm tra stock
+              if (variant.getStockQuantity() == null
+                  || variant.getStockQuantity() < itemReq.getQuantity()) {
+                throw new ResponseException(
+                    HttpStatus.BAD_REQUEST,
+                    "Không đủ hàng trong kho. Còn lại: "
+                        + (variant.getStockQuantity() != null ? variant.getStockQuantity() : 0));
+              }
 
-      // Tính giá
-      BigDecimal unitPrice = variant.getProduct().getPrice();
-      if (variant.getPriceAdjustment() != null && variant.getPriceAdjustment().compareTo(BigDecimal.ZERO) != 0) {
-        unitPrice = unitPrice.add(variant.getPriceAdjustment());
-      }
+              // Tính giá
+              BigDecimal unitPrice = variant.getProduct().getPrice();
+              if (variant.getPriceAdjustment() != null
+                  && variant.getPriceAdjustment().compareTo(BigDecimal.ZERO) != 0) {
+                unitPrice = unitPrice.add(variant.getPriceAdjustment());
+              }
 
-      // Tạo variant info để lưu snapshot
-      Map<String, Object> variantInfo = new HashMap<>();
-      variantInfo.put("sizeName", variant.getSize().getName());
-      variantInfo.put("colorName", variant.getColor().getName());
-      variantInfo.put("productCode", variant.getProduct().getCode());
+              // Tạo variant info để lưu snapshot
+              Map<String, Object> variantInfo = new HashMap<>();
+              variantInfo.put("sizeName", variant.getSize().getName());
+              variantInfo.put("colorName", variant.getColor().getName());
+              variantInfo.put("productCode", variant.getProduct().getCode());
 
-      return OrderItem.builder()
-          .variant(variant)
-          .productName(variant.getProduct().getName())
-          .variantInfo(variantInfo)
-          .quantity(itemReq.getQuantity())
-          .unitPrice(unitPrice)
-          .build();
-    }).collect(Collectors.toList());
+              return OrderItem.builder()
+                  .variant(variant)
+                  .productName(variant.getProduct().getName())
+                  .variantInfo(variantInfo)
+                  .quantity(itemReq.getQuantity())
+                  .unitPrice(unitPrice)
+                  .build();
+            })
+        .collect(Collectors.toList());
   }
 
   private BigDecimal calculateSubtotal(List<OrderItem> orderItems) {
@@ -162,16 +235,21 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
 
   private Coupon validateAndUseCoupon(String couponCode, Long userId, BigDecimal orderAmount) {
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    
-    Coupon coupon = couponRepository.findValidCouponByCode(couponCode, now)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, 
-            "Mã coupon không hợp lệ hoặc đã hết hạn"));
+
+    Coupon coupon =
+        couponRepository
+            .findValidCouponByCode(couponCode, now)
+            .orElseThrow(
+                () ->
+                    new ResponseException(
+                        HttpStatus.BAD_REQUEST, "Mã coupon không hợp lệ hoặc đã hết hạn"));
 
     // Kiểm tra coupon có giới hạn user không
     if (coupon.getUserSpecific() != null && coupon.getUserSpecific()) {
       boolean isAllowed = couponUserRepository.existsByCouponIdAndUserId(coupon.getId(), userId);
       if (!isAllowed) {
-        throw new ResponseException(HttpStatus.BAD_REQUEST, "Bạn không được phép sử dụng mã coupon này");
+        throw new ResponseException(
+            HttpStatus.BAD_REQUEST, "Bạn không được phép sử dụng mã coupon này");
       }
     }
 
@@ -183,7 +261,8 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
 
     // Kiểm tra điều kiện minimum amount
     if (orderAmount.compareTo(coupon.getMinimumAmount()) < 0) {
-      throw new ResponseException(HttpStatus.BAD_REQUEST, 
+      throw new ResponseException(
+          HttpStatus.BAD_REQUEST,
           "Đơn hàng phải có giá trị tối thiểu " + coupon.getMinimumAmount() + " để sử dụng mã này");
     }
 
@@ -199,54 +278,65 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
   }
 
   public OrderResponse updateOrderStatus(Long orderId, OrderStatus newStatus) {
-    Order order = orderRepository.findById(orderId)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
+    Order order =
+        orderRepository
+            .findById(orderId)
+            .orElseThrow(
+                () -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
 
     order.setStatus(newStatus);
     order = orderRepository.save(order);
-    
+
     return mapToOrderResponse(order);
   }
 
   public OrderResponse updatePaymentStatus(Long orderId, PaymentStatus newStatus) {
-    Order order = orderRepository.findById(orderId)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
+    Order order =
+        orderRepository
+            .findById(orderId)
+            .orElseThrow(
+                () -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
 
     order.setPaymentStatus(newStatus);
     order = orderRepository.save(order);
-    
+
     return mapToOrderResponse(order);
   }
 
   public List<OrderResponse> getOrdersByUser(Long userId) {
-    return orderRepository.findByUserIdOrderByCreatedAtDesc(userId)
-        .stream()
+    return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
         .map(this::mapToOrderResponse)
         .collect(Collectors.toList());
   }
 
   public OrderResponse getOrderByCode(String code) {
-    Order order = orderRepository.findByCode(code)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
-    
+    Order order =
+        orderRepository
+            .findByCode(code)
+            .orElseThrow(
+                () -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
+
     return mapToOrderResponse(order);
   }
 
   public OrderResponse mapToOrderResponse(Order order) {
     List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
-    
-    List<OrderItemResponse> orderItemResponses = orderItems.stream()
-        .map(item -> OrderItemResponse.builder()
-            .id(item.getId())
-            .variantId(item.getVariant() != null ? item.getVariant().getId() : null)
-            .productName(item.getProductName())
-            .variantInfo(item.getVariantInfo())
-            .quantity(item.getQuantity())
-            .unitPrice(item.getUnitPrice())
-            .totalPrice(item.getTotalPrice())
-            .createdAt(item.getCreatedAt())
-            .build())
-        .collect(Collectors.toList());
+
+    List<OrderItemResponse> orderItemResponses =
+        orderItems.stream()
+            .map(
+                item ->
+                    OrderItemResponse.builder()
+                        .id(item.getId())
+                        .variantId(item.getVariant() != null ? item.getVariant().getId() : null)
+                        .productName(item.getProductName())
+                        .variantInfo(item.getVariantInfo())
+                        .quantity(item.getQuantity())
+                        .unitPrice(item.getUnitPrice())
+                        .totalPrice(item.getTotalPrice())
+                        .createdAt(item.getCreatedAt())
+                        .build())
+            .collect(Collectors.toList());
 
     return OrderResponse.builder()
         .id(order.getId())
@@ -265,7 +355,8 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
         .discountAmount(order.getDiscountAmount())
         .totalAmount(order.getTotalAmount())
         .paymentMethodId(order.getPaymentMethod() != null ? order.getPaymentMethod().getId() : null)
-        .paymentMethodName(order.getPaymentMethod() != null ? order.getPaymentMethod().getName() : null)
+        .paymentMethodName(
+            order.getPaymentMethod() != null ? order.getPaymentMethod().getName() : null)
         .paymentStatus(order.getPaymentStatus())
         .couponCode(order.getCouponCode())
         .note(order.getNote())
@@ -283,4 +374,4 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
   private BiFunction<HeaderContext, Order, OrderResponse> mappingResponseHandler() {
     return (context, order) -> mapToOrderResponse(order);
   }
-} 
+}
