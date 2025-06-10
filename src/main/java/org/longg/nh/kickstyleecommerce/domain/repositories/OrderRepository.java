@@ -21,9 +21,9 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
     
     List<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status);
-    
-    @Query(value = "SELECT generate_order_code()", nativeQuery = true)
-    String generateOrderCode();
+
+    @Query(value = "SELECT last_value + 1 FROM orders.orders_id_seq", nativeQuery = true)
+    Long getNextSequence();
     
     // Thống kê doanh thu theo ngày
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +

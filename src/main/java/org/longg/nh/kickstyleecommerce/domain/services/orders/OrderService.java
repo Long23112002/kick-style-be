@@ -76,7 +76,7 @@ public class OrderService implements IBaseService<Order, Long, OrderResponse, Cr
     // Tạo order
     Order order = Order.builder()
         .user(user)
-        .code(orderRepository.generateOrderCode())
+        .code("OD"+orderRepository.getNextSequence())
         .status(OrderStatus.PENDING)
         .customerName(request.getCustomerName())
         .customerEmail(request.getCustomerEmail())
