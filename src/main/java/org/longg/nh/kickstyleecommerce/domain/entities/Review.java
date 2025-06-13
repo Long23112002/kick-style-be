@@ -1,5 +1,6 @@
 package org.longg.nh.kickstyleecommerce.domain.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
@@ -35,6 +36,7 @@ public class Review {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_id", nullable = false)
   @NotFound(action = NotFoundAction.IGNORE)
+  @JsonIgnoreProperties("orderItems")
   private Order order;
 
   @Column(name = "rating", nullable = false)
