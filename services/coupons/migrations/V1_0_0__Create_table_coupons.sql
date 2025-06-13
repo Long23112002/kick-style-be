@@ -7,11 +7,11 @@ CREATE TABLE coupons.coupons
     id               BIGSERIAL PRIMARY KEY,
     code             VARCHAR(50)   NOT NULL UNIQUE,
     description      TEXT,
-    discount_type    VARCHAR(20)   NOT NULL CHECK (discount_type IN ('PERCENTAGE', 'FIXED_AMOUNT')),
+    discount_type    VARCHAR(20)   NOT NULL  ,
     discount_value   NUMERIC(10,2) NOT NULL,
     minimum_amount   NUMERIC(10,2) DEFAULT 0,
     maximum_discount NUMERIC(10,2),
-    usage_limit      INTEGER       DEFAULT NULL, -- NULL nghĩa là không giới hạn
+    usage_limit      INTEGER       DEFAULT NULL,
     used_count       INTEGER       DEFAULT 0,
     start_date       TIMESTAMP     NOT NULL,
     end_date         TIMESTAMP     NOT NULL,

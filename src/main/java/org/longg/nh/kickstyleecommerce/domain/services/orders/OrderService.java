@@ -46,6 +46,7 @@ public class OrderService
   private final UserCouponUsageRepository userCouponUsageRepository;
   private final ProductService productService;
   private final CartItemRepository cartItemRepository;
+  private final ReviewsRepository reviewRepository;
 
   @Override
   public IBasePersistence<Order, Long> getPersistence() {
@@ -62,6 +63,13 @@ public class OrderService
     Page<Order> orders = orderRepository.findAll(pageable);
     return orders.map(this::mapToOrderResponse);
   }
+
+
+  public Boolean checkOrderReview (Long userId , Long orderId){
+      return reviewRepository.existsByUserIdAndOrderId(userId, orderId);
+  }
+
+
 
   @Transactional
   public OrderResponse createOrder(HeaderContext context, CreateOrderRequest request, Long userId) {
