@@ -64,12 +64,9 @@ public class OrderService
     return orders.map(this::mapToOrderResponse);
   }
 
-
-  public Boolean checkOrderReview (Long userId , Long orderId){
-      return reviewRepository.existsByUserIdAndOrderId(userId, orderId);
+  public Boolean checkOrderReview(Long userId, Long orderId) {
+    return reviewRepository.existsByUserIdAndOrderId(userId, orderId);
   }
-
-
 
   @Transactional
   public OrderResponse createOrder(HeaderContext context, CreateOrderRequest request, Long userId) {
@@ -371,6 +368,9 @@ public class OrderService
         .createdAt(order.getCreatedAt())
         .updatedAt(order.getUpdatedAt())
         .orderItems(orderItemResponses)
+        .isReviewed(
+            checkOrderReview(
+                order.getUser() != null ? order.getUser().getId() : null, order.getId()))
         .build();
   }
 

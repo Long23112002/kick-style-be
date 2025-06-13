@@ -147,6 +147,17 @@
                         </configuration>
                     </execution>
 
+                    <execution>
+                        <id>reviews</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                        <configuration>
+                            <configFile>services/reviews/config/dev/flyway.conf</configFile>
+                        </configuration>
+                    </execution>
+
 
                     <execution>
                         <id>carts</id>

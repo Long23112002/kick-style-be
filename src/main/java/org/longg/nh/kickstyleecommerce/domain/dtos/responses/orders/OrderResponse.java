@@ -36,5 +36,6 @@ public class OrderResponse {
   private String note;
   private Timestamp createdAt;
   private Timestamp updatedAt;
+  private Boolean isReviewed;
   private List<OrderItemResponse> orderItems;
 } 
