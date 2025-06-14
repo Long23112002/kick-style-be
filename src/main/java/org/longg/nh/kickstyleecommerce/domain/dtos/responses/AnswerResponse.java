@@ -1,5 +1,6 @@
 package org.longg.nh.kickstyleecommerce.domain.dtos.responses;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,21 +16,24 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class AnswerResponse {
 
-  private Long id;
+    private Long id;
 
-  private User user;
+    @JsonIgnoreProperties({"reviews", "orders", "answers"})
+    private User user;
 
-  private List<String> images;
+    private List<String> images;
 
-  private String answer;
+    private String answer;
 
-  private Review review;
+    @JsonIgnoreProperties({"answers", "user", "order"})
+    private Review review;
 
-  private Timestamp createdAt;
+    private Timestamp createdAt;
 
-  private Timestamp updatedAt;
+    private Timestamp updatedAt;
 
-  private Boolean isDeleted;
+    private Boolean isDeleted;
 }

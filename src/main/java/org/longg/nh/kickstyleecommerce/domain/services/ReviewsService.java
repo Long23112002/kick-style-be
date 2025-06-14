@@ -16,6 +16,8 @@ import org.longg.nh.kickstyleecommerce.domain.persistence.ReviewsPersistence;
 import org.longg.nh.kickstyleecommerce.domain.repositories.ReviewsRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.UserRepository;
 import org.longg.nh.kickstyleecommerce.domain.services.orders.OrderService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -50,8 +52,46 @@ public class ReviewsService
     review.setComment(reviewRequest.getComment());
     review.setOrder(order);
     review.setUser(user);
+    review.setImages(reviewRequest.getImages());
 
-    return objectMapper.convertValue(
-        reviewsRepository.save(review), ReviewResponse.class);
+    return mapToReviewResponse(reviewsRepository.save(review));
+  }
+
+  public Page<ReviewResponse> getAll(HeaderContext context, Pageable pageable) {
+    Page<Review> reviews = reviewsRepository.findAll(pageable);
+    return reviews.map(this::mapToReviewResponse);
+  }
+
+  private ReviewResponse mapToReviewResponse(Review review) {
+    ReviewResponse response = new ReviewResponse();
+    response.setId(review.getId());
+    response.setRating(review.getRating());
+    response.setComment(review.getComment());
+    response.setImages(review.getImages());
+    response.setCreatedAt(review.getCreatedAt());
+    response.setUpdatedAt(review.getUpdatedAt());
+    response.setIsDeleted(review.getIsDeleted());
+
+    // Map user info
+    if (review.getUser() != null) {
+        User user = review.getUser();
+        User userInfo = new User();
+        userInfo.setId(user.getId());
+        userInfo.setFullName(user.getFullName());
+        userInfo.setEmail(user.getEmail());
+        userInfo.setAvatarUrl(user.getAvatarUrl());
+        response.setUser(userInfo);
+    }
+
+    // Map order info
+    if (review.getOrder() != null) {
+        Order order = review.getOrder();
+        Order orderInfo = new Order();
+        orderInfo.setId(order.getId());
+        orderInfo.setCode(order.getCode());
+        response.setOrder(orderInfo);
+    }
+
+    return response;
   }
 }

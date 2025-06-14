@@ -1,6 +1,9 @@
 package org.longg.nh.kickstyleecommerce.domain.entities;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
@@ -22,6 +25,8 @@ import java.util.List;
 @AllArgsConstructor
 @Where(clause = "is_deleted = false")
 @SQLDelete(sql = "UPDATE reviews.reviews SET is_deleted = true WHERE id = ?")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Review {
 
   @Id
@@ -31,12 +36,13 @@ public class Review {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   @NotFound(action = NotFoundAction.IGNORE)
+  @JsonIgnoreProperties({"reviews", "orders", "answers"})
   private User user;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_id", nullable = false)
   @NotFound(action = NotFoundAction.IGNORE)
-  @JsonIgnoreProperties("orderItems")
+  @JsonIgnoreProperties({"reviews", "orderItems", "user"})
   private Order order;
 
   @Column(name = "rating", nullable = false)
@@ -61,5 +67,7 @@ public class Review {
   private Boolean isDeleted = false;
 
   @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnoreProperties({"review", "user"})
+  @JsonManagedReference
   private List<Answers> answers;
 }

@@ -1,5 +1,9 @@
 package org.longg.nh.kickstyleecommerce.domain.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -13,13 +17,15 @@ import java.sql.Timestamp;
 import java.util.List;
 
 @Entity
-@Table(name = "reviews", schema = "answers")
+@Table(name = "answers", schema = "reviews")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Where(clause = "is_deleted = false")
 @SQLDelete(sql = "UPDATE reviews.answers SET is_deleted = true WHERE id = ?")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Answers {
 
   @Id
@@ -29,6 +35,7 @@ public class Answers {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   @NotFound(action = NotFoundAction.IGNORE)
+  @JsonIgnoreProperties({"reviews", "orders", "answers"})
   private User user;
 
   @Column(name = "images")
@@ -41,6 +48,7 @@ public class Answers {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "review_id", nullable = false)
   @NotFound(action = NotFoundAction.IGNORE)
+  @JsonBackReference
   private Review review;
 
   @Column(name = "created_at", nullable = false, updatable = false)
