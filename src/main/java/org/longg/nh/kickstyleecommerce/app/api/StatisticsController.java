@@ -122,14 +122,19 @@ public class StatisticsController {
     return ResponseEntity.ok(responses);
   }
 
-  @Operation(summary = "Dashboard tổng quan", description = "Lấy thông tin tổng quan cho dashboard quản trị bao gồm doanh thu và top sản phẩm")
+  @Operation(summary = "Dashboard tổng quan", description = "Lấy thông tin tổng quan cho dashboard quản trị bao gồm doanh thu và top sản phẩm. Có thể lọc theo ngày, tháng, năm.")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy thông tin dashboard thành công",
                   content = @Content(schema = @Schema(implementation = StatisticsService.DashboardSummaryResponse.class)))
   })
   @GetMapping("/dashboard")
-  public ResponseEntity<StatisticsService.DashboardSummaryResponse> getDashboardSummary() {
-    StatisticsService.DashboardSummaryResponse response = statisticsService.getDashboardSummary();
-    return ResponseEntity.ok(response);
-  }
+  public ResponseEntity<StatisticsService.DashboardSummaryResponse> getDashboardSummary(
+          @RequestParam(required = false) @Parameter(description = "Năm cần thống kê (yyyy)") Integer year,
+          @RequestParam(required = false) @Parameter(description = "Tháng cần thống kê (1-12)") Integer month,
+          @RequestParam(required = false) @Parameter(description = "Ngày cần thống kê (yyyy-MM-dd)") 
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        
+        StatisticsService.DashboardSummaryResponse response = statisticsService.getDashboardSummary(year, month, date);
+        return ResponseEntity.ok(response);
+    }
 } 

@@ -15,7 +15,9 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
     List<OrderItem> findByOrderId(Long orderId);
     
     // Thống kê sản phẩm bán chạy theo ngày
-    @Query("SELECT oi.variant.id as variantId, oi.productName, SUM(oi.quantity) as totalSold " +
+    @Query("SELECT oi.variant.id as variantId, oi.productName, " +
+           "SUM(oi.quantity) as totalSold, " +
+           "SUM(oi.quantity * oi.unitPrice) as totalRevenue " +
            "FROM OrderItem oi JOIN oi.order o " +
            "WHERE o.paymentStatus = 'PAID' AND DATE(oi.createdAt) = DATE(:date) " +
            "GROUP BY oi.variant.id, oi.productName " +
@@ -23,7 +25,9 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
     List<Object[]> getTopSellingProductsByDate(@Param("date") Timestamp date);
     
     // Thống kê sản phẩm bán chạy theo tháng
-    @Query("SELECT oi.variant.id as variantId, oi.productName, SUM(oi.quantity) as totalSold " +
+    @Query("SELECT oi.variant.id as variantId, oi.productName, " +
+           "SUM(oi.quantity) as totalSold, " +
+           "SUM(oi.quantity * oi.unitPrice) as totalRevenue " +
            "FROM OrderItem oi JOIN oi.order o " +
            "WHERE o.paymentStatus = 'PAID' AND YEAR(oi.createdAt) = :year AND MONTH(oi.createdAt) = :month " +
            "GROUP BY oi.variant.id, oi.productName " +
@@ -31,7 +35,9 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
     List<Object[]> getTopSellingProductsByMonth(@Param("year") int year, @Param("month") int month);
     
     // Thống kê sản phẩm bán chạy theo năm
-    @Query("SELECT oi.variant.id as variantId, oi.productName, SUM(oi.quantity) as totalSold " +
+    @Query("SELECT oi.variant.id as variantId, oi.productName, " +
+           "SUM(oi.quantity) as totalSold, " +
+           "SUM(oi.quantity * oi.unitPrice) as totalRevenue " +
            "FROM OrderItem oi JOIN oi.order o " +
            "WHERE o.paymentStatus = 'PAID' AND YEAR(oi.createdAt) = :year " +
            "GROUP BY oi.variant.id, oi.productName " +

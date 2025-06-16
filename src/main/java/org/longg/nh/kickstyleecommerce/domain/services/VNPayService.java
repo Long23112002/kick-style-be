@@ -1,10 +1,16 @@
 package org.longg.nh.kickstyleecommerce.domain.services;
 
+import com.eps.shared.models.exceptions.ResponseException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.longg.nh.kickstyleecommerce.domain.entities.Order;
+import org.longg.nh.kickstyleecommerce.domain.entities.enums.OrderStatus;
+import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
+import org.longg.nh.kickstyleecommerce.domain.repositories.OrderRepository;
+import org.longg.nh.kickstyleecommerce.domain.services.orders.OrderService;
 import org.longg.nh.kickstyleecommerce.infrastructure.config.VNPayConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +25,8 @@ public class VNPayService {
   @Autowired private VNPayConfig vnPayConfig;
 
   @Autowired private HttpServletRequest request;
+
+  @Autowired private OrderRepository orderRepository;
 
   @Value("${vnpay.url}")
   private String vnPayUrl;
@@ -51,8 +59,18 @@ public class VNPayService {
     return vnPayUrl + "?" + queryUrl;
   }
 
-  public ResponseEntity<?> paymentSuccess(String status) {
+  public ResponseEntity<?> paymentSuccess(String status, Long orderId) {
     if (status.equals("00")) {
+      Order order =
+          orderRepository
+              .findById(orderId)
+              .orElseThrow(
+                  () ->
+                      new ResponseException(
+                          HttpStatus.NOT_FOUND, "Order not found with id: " + orderId));
+      order.setPaymentStatus(PaymentStatus.PAID);
+      orderRepository.save(order);
+
       return ResponseEntity.ok("redirect:/success");
     } else {
       return ResponseEntity.badRequest().build();

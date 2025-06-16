@@ -15,6 +15,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -135,25 +136,72 @@ public class StatisticsService {
   }
 
   // Dashboard Summary
-  public DashboardSummaryResponse getDashboardSummary() {
+  public DashboardSummaryResponse getDashboardSummary(Integer year, Integer month, LocalDate date) {
     LocalDate today = LocalDate.now();
-    LocalDate thisMonth = today.withDayOfMonth(1);
-    int currentYear = today.getYear();
-    int currentMonth = today.getMonthValue();
+    int currentYear = Optional.ofNullable(year).orElse(today.getYear());
+    int currentMonth = Optional.ofNullable(month).orElse(today.getMonthValue());
+    LocalDate targetDate = Optional.ofNullable(date).orElse(today);
 
-    // Today's stats
+    // Nếu có ngày cụ thể, chỉ lấy thống kê theo ngày
+    if (date != null) {
+      RevenueStatResponse dateStats = getTotalRevenueByDate(targetDate);
+      List<ProductSalesResponse> topProducts = getTopSellingProductsByDate(targetDate, 5);
+      List<UserStatResponse> topCustomers = getTopCustomers(5);
+
+      return DashboardSummaryResponse.builder()
+          .todayRevenue(dateStats.getTotalRevenue())
+          .todayOrders(dateStats.getTotalOrders())
+          .monthRevenue(BigDecimal.ZERO)
+          .monthOrders(0L)
+          .yearRevenue(BigDecimal.ZERO)
+          .yearOrders(0L)
+          .topProducts(topProducts)
+          .topCustomers(topCustomers)
+          .build();
+    }
+
+    // Nếu có tháng cụ thể, lấy thống kê theo tháng và năm
+    if (month != null) {
+      RevenueStatResponse monthStats = getTotalRevenueByMonth(currentYear, currentMonth);
+      RevenueStatResponse yearStats = getTotalRevenueByYear(currentYear);
+      List<ProductSalesResponse> topProducts = getTopSellingProductsByMonth(currentYear, currentMonth, 5);
+      List<UserStatResponse> topCustomers = getTopCustomers(5);
+
+      return DashboardSummaryResponse.builder()
+          .todayRevenue(BigDecimal.ZERO)
+          .todayOrders(0L)
+          .monthRevenue(monthStats.getTotalRevenue())
+          .monthOrders(monthStats.getTotalOrders())
+          .yearRevenue(yearStats.getTotalRevenue())
+          .yearOrders(yearStats.getTotalOrders())
+          .topProducts(topProducts)
+          .topCustomers(topCustomers)
+          .build();
+    }
+
+    // Nếu chỉ có năm, lấy thống kê theo năm
+    if (year != null) {
+      RevenueStatResponse yearStats = getTotalRevenueByYear(currentYear);
+      List<ProductSalesResponse> topProducts = getTopSellingProductsByYear(currentYear, 5);
+      List<UserStatResponse> topCustomers = getTopCustomers(5);
+
+      return DashboardSummaryResponse.builder()
+          .todayRevenue(BigDecimal.ZERO)
+          .todayOrders(0L)
+          .monthRevenue(BigDecimal.ZERO)
+          .monthOrders(0L)
+          .yearRevenue(yearStats.getTotalRevenue())
+          .yearOrders(yearStats.getTotalOrders())
+          .topProducts(topProducts)
+          .topCustomers(topCustomers)
+          .build();
+    }
+
+    // Mặc định lấy thống kê của ngày hiện tại
     RevenueStatResponse todayStats = getTotalRevenueByDate(today);
-    
-    // This month's stats
     RevenueStatResponse monthStats = getTotalRevenueByMonth(currentYear, currentMonth);
-    
-    // This year's stats
     RevenueStatResponse yearStats = getTotalRevenueByYear(currentYear);
-    
-    // Top products this month
     List<ProductSalesResponse> topProducts = getTopSellingProductsByMonth(currentYear, currentMonth, 5);
-    
-    // Top customers
     List<UserStatResponse> topCustomers = getTopCustomers(5);
 
     return DashboardSummaryResponse.builder()

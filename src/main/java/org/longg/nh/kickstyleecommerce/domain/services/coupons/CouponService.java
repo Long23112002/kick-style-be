@@ -27,7 +27,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class CouponService implements IBaseService<Coupon, Long, CouponResponse, CouponRequest, CouponResponse> {
+public class CouponService
+    implements IBaseService<Coupon, Long, CouponResponse, CouponRequest, CouponResponse> {
 
   private final CouponPersistence couponPersistence;
   private final CouponRepository couponRepository;
@@ -46,41 +47,43 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
       throw new ResponseException(HttpStatus.BAD_REQUEST, "Mã coupon đã tồn tại");
     }
 
-    Coupon coupon = Coupon.builder()
-        .code(request.getCode())
-        .name(request.getName())
-        .description(request.getDescription())
-        .discountType(request.getDiscountType())
-        .discountValue(request.getDiscountValue())
-        .minimumAmount(request.getMinimumAmount())
-        .maximumDiscount(request.getMaximumDiscount())
-        .maxUsageCount(request.getMaxUsageCount())
-        .usedCount(0)
-        .startDate(request.getValidFrom())
-        .endDate(request.getValidTo())
-        .validFrom(request.getValidFrom())
-        .validTo(request.getValidTo())
-        .userSpecific(request.getUserSpecific())
-        .isActive(true)
-        .build();
+    Coupon coupon =
+        Coupon.builder()
+            .code(request.getCode())
+            .name(request.getName())
+            .description(request.getDescription())
+            .discountType(request.getDiscountType())
+            .discountValue(request.getDiscountValue())
+            .minimumAmount(request.getMinimumAmount())
+            .maximumDiscount(request.getMaximumDiscount())
+            .maxUsageCount(request.getMaxUsageCount())
+            .usedCount(0)
+            .startDate(request.getValidFrom())
+            .endDate(request.getValidTo())
+            .validFrom(request.getValidFrom())
+            .validTo(request.getValidTo())
+            .userSpecific(request.getUserSpecific())
+            .isActive(true)
+            .isDeleted(false)
+            .build();
 
     Coupon savedCoupon = couponRepository.save(coupon);
 
     // Nếu là user-specific coupon, tạo relationships
-    if (request.getUserSpecific() != null && request.getUserSpecific() && 
-        request.getUserIds() != null && !request.getUserIds().isEmpty()) {
-      
+    if (request.getUserSpecific() != null
+        && request.getUserSpecific()
+        && request.getUserIds() != null
+        && !request.getUserIds().isEmpty()) {
+
       List<User> users = userRepository.findAllById(request.getUserIds());
       if (users.size() != request.getUserIds().size()) {
         throw new ResponseException(HttpStatus.BAD_REQUEST, "Một số user ID không tồn tại");
       }
 
-      List<CouponUser> couponUsers = users.stream()
-          .map(user -> CouponUser.builder()
-              .coupon(savedCoupon)
-              .user(user)
-              .build())
-          .collect(Collectors.toList());
+      List<CouponUser> couponUsers =
+          users.stream()
+              .map(user -> CouponUser.builder().coupon(savedCoupon).user(user).build())
+              .collect(Collectors.toList());
 
       couponUserRepository.saveAll(couponUsers);
     }
@@ -90,11 +93,15 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
 
   @Transactional
   public CouponResponse updateCoupon(Long id, CouponRequest request) {
-    Coupon coupon = couponRepository.findById(id)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Coupon không tồn tại"));
+    Coupon coupon =
+        couponRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new ResponseException(HttpStatus.BAD_REQUEST, "Coupon không tồn tại"));
 
     // Kiểm tra code không trùng (trừ chính nó)
-    if (!coupon.getCode().equals(request.getCode()) && couponRepository.existsByCode(request.getCode())) {
+    if (!coupon.getCode().equals(request.getCode())
+        && couponRepository.existsByCode(request.getCode())) {
       throw new ResponseException(HttpStatus.BAD_REQUEST, "Mã coupon đã tồn tại");
     }
 
@@ -116,22 +123,22 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
 
     // Cập nhật user relationships
     couponUserRepository.deleteByCouponId(id);
-    
-    if (request.getUserSpecific() != null && request.getUserSpecific() && 
-        request.getUserIds() != null && !request.getUserIds().isEmpty()) {
-      
+
+    if (request.getUserSpecific() != null
+        && request.getUserSpecific()
+        && request.getUserIds() != null
+        && !request.getUserIds().isEmpty()) {
+
       List<User> users = userRepository.findAllById(request.getUserIds());
       if (users.size() != request.getUserIds().size()) {
         throw new ResponseException(HttpStatus.BAD_REQUEST, "Một số user ID không tồn tại");
       }
 
       Coupon finalCoupon = coupon;
-      List<CouponUser> couponUsers = users.stream()
-          .map(user -> CouponUser.builder()
-              .coupon(finalCoupon)
-              .user(user)
-              .build())
-          .collect(Collectors.toList());
+      List<CouponUser> couponUsers =
+          users.stream()
+              .map(user -> CouponUser.builder().coupon(finalCoupon).user(user).build())
+              .collect(Collectors.toList());
 
       couponUserRepository.saveAll(couponUsers);
     }
@@ -141,43 +148,47 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
 
   public List<CouponResponse> getActiveCoupons() {
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    return couponRepository.findActiveCoupons(now)
-        .stream()
+    return couponRepository.findActiveCoupons(now).stream()
         .map(this::mapToCouponResponse)
         .collect(Collectors.toList());
   }
 
   public List<CouponResponse> getValidCouponsForUser(Long userId) {
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    return couponRepository.findValidCouponsForUser(userId, now)
-        .stream()
+    return couponRepository.findValidCouponsForUser(userId, now).stream()
         .map(this::mapToCouponResponse)
         .collect(Collectors.toList());
   }
 
   public CouponResponse activateCoupon(Long id) {
-    Coupon coupon = couponRepository.findById(id)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Coupon không tồn tại"));
+    Coupon coupon =
+        couponRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new ResponseException(HttpStatus.BAD_REQUEST, "Coupon không tồn tại"));
 
     coupon.setIsActive(true);
     coupon = couponRepository.save(coupon);
-    
+
     return mapToCouponResponse(coupon);
   }
 
   public CouponResponse deactivateCoupon(Long id) {
-    Coupon coupon = couponRepository.findById(id)
-        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Coupon không tồn tại"));
+    Coupon coupon =
+        couponRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new ResponseException(HttpStatus.BAD_REQUEST, "Coupon không tồn tại"));
 
     coupon.setIsActive(false);
     coupon = couponRepository.save(coupon);
-    
+
     return mapToCouponResponse(coupon);
   }
 
   public CouponResponse mapToCouponResponse(Coupon coupon) {
     List<Long> userIds = null;
-    
+
     if (coupon.getUserSpecific() != null && coupon.getUserSpecific()) {
       userIds = couponUserRepository.findUserIdsByCouponId(coupon.getId());
     }
@@ -216,31 +227,33 @@ public class CouponService implements IBaseService<Coupon, Long, CouponResponse,
 
   // Paginated methods
   public Page<CouponResponse> getAllCoupons(Pageable pageable) {
-    return couponRepository.findAll(pageable)
-        .map(this::mapToCouponResponse);
+    return couponRepository.findAll(pageable).map(this::mapToCouponResponse);
   }
 
   public Page<CouponResponse> getActiveCoupons(Pageable pageable) {
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    return couponRepository.findActiveCoupons(now, pageable)
-        .map(this::mapToCouponResponse);
+    return couponRepository.findActiveCoupons(now, pageable).map(this::mapToCouponResponse);
   }
 
   public Page<CouponResponse> getValidCouponsForUser(Long userId, Pageable pageable) {
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    return couponRepository.findValidCouponsForUser(userId, now, pageable)
+    return couponRepository
+        .findValidCouponsForUser(userId, now, pageable)
         .map(this::mapToCouponResponse);
   }
 
   // Search and filter methods
-  public Page<CouponResponse> searchCoupons(String code, String name, Boolean isActive, Pageable pageable) {
-    return couponRepository.findCouponsWithFilters(code, name, isActive, pageable)
+  public Page<CouponResponse> searchCoupons(
+      String code, String name, Boolean isActive, Pageable pageable) {
+    return couponRepository
+        .findCouponsWithFilters(code, name, isActive, pageable)
         .map(this::mapToCouponResponse);
   }
 
   public Page<CouponResponse> searchActiveCoupons(String code, String name, Pageable pageable) {
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    return couponRepository.findActiveCouponsWithFilters(code, name, now, pageable)
+    return couponRepository
+        .findActiveCouponsWithFilters(code, name, now, pageable)
         .map(this::mapToCouponResponse);
   }
-} 
+}

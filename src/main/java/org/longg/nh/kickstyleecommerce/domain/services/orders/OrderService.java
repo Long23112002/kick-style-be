@@ -379,7 +379,6 @@ public class OrderService
     orderRepository.deleteById(id);
   }
 
-  private BiFunction<HeaderContext, Order, OrderResponse> mappingResponseHandler() {
-    return (context, order) -> mapToOrderResponse(order);
-  }
+
+
 }
