@@ -1,10 +1,12 @@
 package org.longg.nh.kickstyleecommerce.domain.services.auth;
 
+import jakarta.mail.util.ByteArrayDataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
@@ -15,83 +17,103 @@ import java.io.UnsupportedEncodingException;
 @RequiredArgsConstructor
 @Slf4j
 public class EmailService {
-    
-    private final JavaMailSender mailSender;
-    
-    @Value("${app.frontend.url:http://localhost:3000}")
-    private String frontendUrl;
-    
-    @Value("${app.name:KickStyle E-commerce}")
-    private String appName;
-    
-    @Value("${app.mail.from}")
-    private String fromEmail;
-    
-    @Value("${app.mail.from-name}")
-    private String fromName;
-    
-    /**
-     * Send verification email using SMTP
-     */
-    public void sendVerificationEmail(String toEmail, String verificationToken, String fullName) {
-        try {
-            String verificationLink = frontendUrl + "/verify-email?token=" + verificationToken;
-            String emailContent = buildVerificationEmailContent(fullName, verificationLink);
-            String subject = "Xác thực tài khoản " + appName + " - " + fullName;
 
-            sendHtmlEmail(toEmail, subject, emailContent);
-            
-            log.info("Verification email sent successfully to: {}", toEmail);
-            
-        } catch (Exception e) {
-            log.error("Failed to send verification email to {}: {}", toEmail, e.getMessage());
-            throw new RuntimeException("Không thể gửi email xác thực");
-        }
+  private final JavaMailSender mailSender;
+
+  @Value("${app.frontend.url:http://localhost:3000}")
+  private String frontendUrl;
+
+  @Value("${app.name:KickStyle E-commerce}")
+  private String appName;
+
+  @Value("${app.mail.from}")
+  private String fromEmail;
+
+  @Value("${app.mail.from-name}")
+  private String fromName;
+
+  /** Send verification email using SMTP */
+  @Async
+  public void sendOrderPdfEmail(String toEmail, String fullName, byte[] pdfBytes, String fileName) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+      helper.setFrom(fromEmail, fromName);
+      helper.setTo(toEmail);
+      helper.setSubject("🧾 Hóa đơn mua hàng - " + appName);
+      helper.setText(
+          String.format(
+              "Xin chào %s,<br><br>Vui lòng tìm hóa đơn mua hàng của bạn trong file đính kèm.",
+              fullName),
+          true);
+
+      helper.addAttachment(fileName, new ByteArrayDataSource(pdfBytes, "application/pdf"));
+
+      mailSender.send(message);
+      log.info("Order PDF email sent successfully to: {}", toEmail);
+    } catch (Exception e) {
+      log.error("Failed to send order PDF email to {}: {}", toEmail, e.getMessage());
+      throw new RuntimeException("Không thể gửi email hóa đơn");
     }
-    
-    /**
-     * Send password reset email using SMTP
-     */
-    public void sendPasswordResetEmail(String toEmail, String resetToken, String fullName) {
-        try {
-            String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
-            String emailContent = buildPasswordResetEmailContent(fullName, resetLink);
-            String subject = "Đặt lại mật khẩu - " + appName;
-            
-            // Send actual email via SMTP
-            sendHtmlEmail(toEmail, subject, emailContent);
-            
-            log.info("Password reset email sent successfully to: {}", toEmail);
-            
-        } catch (Exception e) {
-            log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
-            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu");
-        }
+  }
+
+  public void sendVerificationEmail(String toEmail, String verificationToken, String fullName) {
+    try {
+      String verificationLink = frontendUrl + "/verify-email?token=" + verificationToken;
+      String emailContent = buildVerificationEmailContent(fullName, verificationLink);
+      String subject = "Xác thực tài khoản " + appName + " - " + fullName;
+
+      sendHtmlEmail(toEmail, subject, emailContent);
+
+      log.info("Verification email sent successfully to: {}", toEmail);
+
+    } catch (Exception e) {
+      log.error("Failed to send verification email to {}: {}", toEmail, e.getMessage());
+      throw new RuntimeException("Không thể gửi email xác thực");
     }
-    
-    /**
-     * Send HTML email via SMTP
-     */
-    private void sendHtmlEmail(String to, String subject, String htmlContent) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom(fromEmail, fromName);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlContent, true);
-            
-            mailSender.send(message);
-            
-        } catch (MessagingException | UnsupportedEncodingException e) {
-            log.error("Failed to send HTML email to: {}", to, e);
-            throw new RuntimeException("Failed to send email", e);
-        }
+  }
+
+  /** Send password reset email using SMTP */
+  public void sendPasswordResetEmail(String toEmail, String resetToken, String fullName) {
+    try {
+      String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
+      String emailContent = buildPasswordResetEmailContent(fullName, resetLink);
+      String subject = "Đặt lại mật khẩu - " + appName;
+
+      // Send actual email via SMTP
+      sendHtmlEmail(toEmail, subject, emailContent);
+
+      log.info("Password reset email sent successfully to: {}", toEmail);
+
+    } catch (Exception e) {
+      log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+      throw new RuntimeException("Không thể gửi email đặt lại mật khẩu");
     }
-    
-    private String buildVerificationEmailContent(String fullName, String verificationLink) {
-        return String.format("""
+  }
+
+  /** Send HTML email via SMTP */
+  private void sendHtmlEmail(String to, String subject, String htmlContent) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+      helper.setFrom(fromEmail, fromName);
+      helper.setTo(to);
+      helper.setSubject(subject);
+      helper.setText(htmlContent, true);
+
+      mailSender.send(message);
+
+    } catch (MessagingException | UnsupportedEncodingException e) {
+      log.error("Failed to send HTML email to: {}", to, e);
+      throw new RuntimeException("Failed to send email", e);
+    }
+  }
+
+  private String buildVerificationEmailContent(String fullName, String verificationLink) {
+    return String.format(
+        """
             <!DOCTYPE html>
             <html>
             <head>
@@ -159,11 +181,11 @@ public class EmailService {
                         <h2>🎉 Chào %s!</h2>
                         <p>Cảm ơn bạn đã đăng ký tài khoản tại <strong>%s</strong>!</p>
                         <p>Để hoàn tất quá trình đăng ký và bắt đầu mua sắm những bộ quần áo bóng đá tuyệt vời, vui lòng click vào nút bên dưới để xác thực email:</p>
-                        
+
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="%s" class="button">✅ Xác thực tài khoản ngay</a>
                         </div>
-                        
+
                         <p><strong>⚠️ Lưu ý:</strong> Link này sẽ hết hạn sau <strong>1 giờ</strong>.</p>
                         <p>Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.</p>
                     </div>
@@ -174,11 +196,13 @@ public class EmailService {
                 </div>
             </body>
             </html>
-            """, appName, fullName, appName, verificationLink, appName);
-    }
-    
-    private String buildPasswordResetEmailContent(String fullName, String resetLink) {
-        return String.format("""
+            """,
+        appName, fullName, appName, verificationLink, appName);
+  }
+
+  private String buildPasswordResetEmailContent(String fullName, String resetLink) {
+    return String.format(
+        """
             <!DOCTYPE html>
             <html>
             <head>
@@ -246,11 +270,11 @@ public class EmailService {
                         <h2>🔑 Chào %s!</h2>
                         <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại <strong>%s</strong>.</p>
                         <p>Click vào nút bên dưới để đặt lại mật khẩu:</p>
-                        
+
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="%s" class="button">🔄 Đặt lại mật khẩu</a>
                         </div>
-                        
+
                         <p><strong>⚠️ Lưu ý:</strong> Link này sẽ hết hạn sau <strong>1 giờ</strong>.</p>
                         <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này và mật khẩu của bạn sẽ không thay đổi.</p>
                     </div>
@@ -261,6 +285,7 @@ public class EmailService {
                 </div>
             </body>
             </html>
-            """, appName, fullName, appName, resetLink, appName);
-    }
-} 
+            """,
+        appName, fullName, appName, resetLink, appName);
+  }
+}

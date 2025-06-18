@@ -34,6 +34,7 @@ import org.longg.nh.kickstyleecommerce.domain.entities.enums.OrderStatus;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
 import org.longg.nh.kickstyleecommerce.domain.persistence.OrderPersistence;
 import org.longg.nh.kickstyleecommerce.domain.repositories.*;
+import org.longg.nh.kickstyleecommerce.domain.services.auth.EmailService;
 import org.longg.nh.kickstyleecommerce.domain.services.products.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -74,6 +75,7 @@ public class OrderService
   private final CartItemRepository cartItemRepository;
   private final ReviewsRepository reviewRepository;
   private final ProductRepository productRepository;
+  private final EmailService emailService;
 
   @Override
   public IBasePersistence<Order, Long> getPersistence() {
@@ -406,7 +408,6 @@ public class OrderService
     orderRepository.deleteById(id);
   }
 
-
   public byte[] generateOrderPdf(Long orderId) {
     Order order = finById(orderId);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -414,7 +415,7 @@ public class OrderService
     try {
 
       InputStream fontStream =
-              getClass().getClassLoader().getResourceAsStream("msttcorefonts/Times_New_Roman.ttf");
+          getClass().getClassLoader().getResourceAsStream("msttcorefonts/Times_New_Roman.ttf");
       if (fontStream == null) {
         throw new FileNotFoundException("Font file not found in classpath!");
       }
@@ -432,7 +433,7 @@ public class OrderService
       document.setFontSize(8);
 
       InputStream logoStream =
-              getClass().getClassLoader().getResourceAsStream("msttcorefonts/logo.png");
+          getClass().getClassLoader().getResourceAsStream("msttcorefonts/logo.png");
       if (logoStream == null) {
         throw new FileNotFoundException("Logo file not found in classpath!");
       }
@@ -448,10 +449,10 @@ public class OrderService
       document.add(logo);
 
       document.add(
-              new Paragraph("HÓA ĐƠN BÁN HÀNG")
-                      .setTextAlignment(TextAlignment.CENTER)
-                      .setBold()
-                      .setMarginBottom(10));
+          new Paragraph("HÓA ĐƠN BÁN HÀNG")
+              .setTextAlignment(TextAlignment.CENTER)
+              .setBold()
+              .setMarginBottom(10));
 
       document.add(new Paragraph("Mã đơn hàng: " + order.getCode()).setBold());
       document.add(new Paragraph("Khách hàng: " + order.getCustomerName()).setBold());
@@ -466,73 +467,78 @@ public class OrderService
       Table table = new Table(new float[] {1, 7, 2, 3});
       table.setWidth(UnitValue.createPercentValue(100));
       table.addHeaderCell(
-              new Cell().add(new Paragraph("STT").setBold()).setTextAlignment(TextAlignment.CENTER));
+          new Cell().add(new Paragraph("STT").setBold()).setTextAlignment(TextAlignment.CENTER));
       table.addHeaderCell(
-              new Cell()
-                      .add(new Paragraph("Tên sản phẩm").setBold())
-                      .setTextAlignment(TextAlignment.LEFT));
+          new Cell()
+              .add(new Paragraph("Tên sản phẩm").setBold())
+              .setTextAlignment(TextAlignment.LEFT));
       table.addHeaderCell(
-              new Cell().add(new Paragraph("SL").setBold()).setTextAlignment(TextAlignment.CENTER));
+          new Cell().add(new Paragraph("SL").setBold()).setTextAlignment(TextAlignment.CENTER));
       table.addHeaderCell(
-              new Cell()
-                      .add(new Paragraph("Thành tiền").setBold())
-                      .setTextAlignment(TextAlignment.RIGHT));
+          new Cell()
+              .add(new Paragraph("Thành tiền").setBold())
+              .setTextAlignment(TextAlignment.RIGHT));
 
       int index = 1;
       double totalWithoutDiscount = 0.0;
       for (var detail : order.getOrderItems()) {
         log.info("Detail: {}", detail.getVariantInfo());
-        BigDecimal lineTotal = detail.getTotalPrice().multiply(BigDecimal.valueOf(detail.getQuantity()));
-        Product product = productRepository.findByCode(detail.getVariantInfo().get("productCode").toString())
-                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Sản phẩm không tồn tại"));
+        BigDecimal lineTotal =
+            detail.getTotalPrice().multiply(BigDecimal.valueOf(detail.getQuantity()));
+        Product product =
+            productRepository
+                .findByCode(detail.getVariantInfo().get("productCode").toString())
+                .orElseThrow(
+                    () -> new ResponseException(HttpStatus.BAD_REQUEST, "Sản phẩm không tồn tại"));
 
         table.addCell(
-                new Cell()
-                        .add(new Paragraph(String.valueOf(index++)))
-                        .setTextAlignment(TextAlignment.CENTER));
+            new Cell()
+                .add(new Paragraph(String.valueOf(index++)))
+                .setTextAlignment(TextAlignment.CENTER));
         table.addCell(
-                new Cell()
-                        .add(new Paragraph(product.getName()))
-                        .setTextAlignment(TextAlignment.LEFT));
+            new Cell().add(new Paragraph(product.getName())).setTextAlignment(TextAlignment.LEFT));
         table.addCell(
-                new Cell()
-                        .add(new Paragraph(String.valueOf(detail.getQuantity())))
-                        .setTextAlignment(TextAlignment.CENTER));
+            new Cell()
+                .add(new Paragraph(String.valueOf(detail.getQuantity())))
+                .setTextAlignment(TextAlignment.CENTER));
         table.addCell(
-                new Cell()
-                        .add(new Paragraph(String.format("%,.0f", lineTotal)))
-                        .setTextAlignment(TextAlignment.RIGHT));
+            new Cell()
+                .add(new Paragraph(String.format("%,.0f", lineTotal)))
+                .setTextAlignment(TextAlignment.RIGHT));
       }
       document.add(table);
 
-      BigDecimal discount = order.getDiscountAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
-//      double totalWithDiscount = od.getDiscountAmount();
+      BigDecimal discount =
+          order.getDiscountAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+      //      double totalWithDiscount = od.getDiscountAmount();
 
       document.add(
-              new Paragraph("Tổng tiền hoá đơn: " + String.format("%,.0f VNĐ", order.getTotalAmount()))
-                      .setTextAlignment(TextAlignment.RIGHT)
-                      .setBold()
-                      .setMarginTop(10));
+          new Paragraph("Tổng tiền hoá đơn: " + String.format("%,.0f VNĐ", order.getTotalAmount()))
+              .setTextAlignment(TextAlignment.RIGHT)
+              .setBold()
+              .setMarginTop(10));
 
       if (discount.compareTo(BigDecimal.ZERO) > 0) {
         document.add(
-                new Paragraph("Khuyến mãi: -" + String.format("%,.0f VNĐ", order.getDiscountAmount()))
-                        .setTextAlignment(TextAlignment.RIGHT)
-                        .setBold());
+            new Paragraph("Khuyến mãi: -" + String.format("%,.0f VNĐ", order.getDiscountAmount()))
+                .setTextAlignment(TextAlignment.RIGHT)
+                .setBold());
       }
 
-//      document
-//              .add(
-//                      new Paragraph("Phí giao hàng: " + String.format("%,.0f VNĐ", order.get()))
-//                              .setTextAlignment(TextAlignment.RIGHT)
-//                              .setBold())
-//              .setTopMargin(10);
+      //      document
+      //              .add(
+      //                      new Paragraph("Phí giao hàng: " + String.format("%,.0f VNĐ",
+      // order.get()))
+      //                              .setTextAlignment(TextAlignment.RIGHT)
+      //                              .setBold())
+      //              .setTopMargin(10);
       document
-              .add(
-                      new Paragraph("Số tiền thanh toán: " + String.format("%,.0f VNĐ", order.getTotalAmount()))
-                              .setTextAlignment(TextAlignment.RIGHT)
-                              .setBold())
-              .setTopMargin(10);
+          .add(
+              new Paragraph(
+                      "Số tiền thanh toán: " + String.format("%,.0f VNĐ", order.getTotalAmount()))
+                  .setTextAlignment(TextAlignment.RIGHT)
+                  .setBold())
+          .setTopMargin(10);
 
       document.close();
     } catch (Exception e) {
@@ -540,10 +546,14 @@ public class OrderService
       throw new ResponseException(HttpStatus.BAD_REQUEST, "Lỗi xuất hoá đơn");
     }
 
-    return out.toByteArray();
+    byte[] pdf = out.toByteArray();
+
+    emailService.sendOrderPdfEmail(
+        order.getUser().getEmail(),
+        order.getUser().getFullName(),
+        pdf,
+        "hoa-don-" + order.getCode() + ".pdf");
+
+    return pdf;
   }
-
-
-
-
 }
