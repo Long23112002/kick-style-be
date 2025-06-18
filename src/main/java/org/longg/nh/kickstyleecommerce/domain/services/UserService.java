@@ -32,6 +32,11 @@ public class UserService
 
   @Override
   public void postCreateHandler(HeaderContext context, User entity, UserRequest request) {
+    if (request.getIsAdmin()) {
+      entity.setIsVerify(true);
+    } else {
+      entity.setIsVerify(false);
+    }
     entity.setPassword(passwordEncoderService.encode(request.getPassword()));
     entity.setRole(roleService.getEntityById(context, request.getRoleId()));
     initializeCart(entity);
@@ -41,7 +46,22 @@ public class UserService
   @Override
   public void postUpdateHandler(
       HeaderContext context, User originalEntity, User entity, Long aLong, UserRequest request) {
+
+    // Cập nhật Role mới
     entity.setRole(roleService.getEntityById(context, request.getRoleId()));
+
+    // Chỉ cập nhật email nếu thay đổi
+    String newEmail = request.getEmail();
+    String currentEmail = originalEntity.getEmail();
+
+    if (newEmail != null && !newEmail.equalsIgnoreCase(currentEmail)) {
+      entity.setEmail(newEmail);
+    } else {
+      // Giữ lại email cũ nếu không thay đổi
+      entity.setEmail(currentEmail);
+    }
+
+    // Gọi xử lý mặc định của lớp cha
     IBaseService.super.postUpdateHandler(context, originalEntity, entity, aLong, request);
   }
 

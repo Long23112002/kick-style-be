@@ -28,4 +28,6 @@ public class UserRequest {
   private String avatarUrl;
 
   private Gender gender;
+
+  private Boolean isAdmin;
 }
