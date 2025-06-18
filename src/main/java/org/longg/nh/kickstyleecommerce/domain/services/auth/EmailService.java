@@ -3,7 +3,10 @@ package org.longg.nh.kickstyleecommerce.domain.services.auth;
 import jakarta.mail.util.ByteArrayDataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -14,7 +17,6 @@ import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
@@ -32,30 +34,36 @@ public class EmailService {
   @Value("${app.mail.from-name}")
   private String fromName;
 
-  /** Send verification email using SMTP */
-  @Async
+  @Qualifier("taskExecutor")
+  private final TaskExecutor taskExecutor;
+
+  public EmailService(JavaMailSender mailSender,
+                      @Qualifier("taskExecutor") TaskExecutor taskExecutor) {
+    this.mailSender = mailSender;
+    this.taskExecutor = taskExecutor;
+  }
+
   public void sendOrderPdfEmail(String toEmail, String fullName, byte[] pdfBytes, String fileName) {
-    try {
-      MimeMessage message = mailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+    taskExecutor.execute(() -> {
+      try {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-      helper.setFrom(fromEmail, fromName);
-      helper.setTo(toEmail);
-      helper.setSubject("🧾 Hóa đơn mua hàng - " + appName);
-      helper.setText(
-          String.format(
-              "Xin chào %s,<br><br>Vui lòng tìm hóa đơn mua hàng của bạn trong file đính kèm.",
-              fullName),
-          true);
+        helper.setFrom(fromEmail, fromName);
+        helper.setTo(toEmail);
+        helper.setSubject("🧾 Hóa đơn mua hàng - " + appName);
+        helper.setText(
+                String.format("Xin chào %s,<br><br>Vui lòng tìm hóa đơn mua hàng của bạn trong file đính kèm.", fullName),
+                true);
 
-      helper.addAttachment(fileName, new ByteArrayDataSource(pdfBytes, "application/pdf"));
+        helper.addAttachment(fileName, new ByteArrayDataSource(pdfBytes, "application/pdf"));
 
-      mailSender.send(message);
-      log.info("Order PDF email sent successfully to: {}", toEmail);
-    } catch (Exception e) {
-      log.error("Failed to send order PDF email to {}: {}", toEmail, e.getMessage());
-      throw new RuntimeException("Không thể gửi email hóa đơn");
-    }
+        mailSender.send(message);
+        log.info("Order PDF email sent successfully to: {}", toEmail);
+      } catch (Exception e) {
+        log.error("Failed to send order PDF email to {}: {}", toEmail, e.getMessage());
+      }
+    });
   }
 
   public void sendVerificationEmail(String toEmail, String verificationToken, String fullName) {
