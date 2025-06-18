@@ -109,12 +109,6 @@ public class OrderController {
     return ResponseEntity.ok(responses);
   }
 
-  @GetMapping("/check-review/{orderId}/{userId}")
-  public Boolean checkReviewExist(
-      @PathVariable @Parameter(description = "ID đơn hàng") Long orderId,
-      @PathVariable @Parameter(description = "ID người dùng") Long userId) {
-    return orderService.checkOrderReview(orderId, userId);
-  }
 
   @GetMapping("/export-pdf/{orderId}")
   public ResponseEntity<byte[]> generateOrderPdf( @PathVariable Long orderId) {

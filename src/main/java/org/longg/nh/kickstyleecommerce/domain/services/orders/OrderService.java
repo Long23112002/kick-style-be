@@ -365,6 +365,7 @@ public class OrderService
                         .variantId(item.getVariant() != null ? item.getVariant().getId() : null)
                         .productName(item.getProductName())
                         .variantInfo(item.getVariantInfo())
+                            .productId(item.getVariant().getProduct().getId())
                         .quantity(item.getQuantity())
                         .unitPrice(item.getUnitPrice())
                         .totalPrice(item.getTotalPrice())
