@@ -37,67 +37,75 @@ public class EmailService {
   @Qualifier("taskExecutor")
   private final TaskExecutor taskExecutor;
 
-  public EmailService(JavaMailSender mailSender,
-                      @Qualifier("taskExecutor") TaskExecutor taskExecutor) {
+  public EmailService(
+      JavaMailSender mailSender, @Qualifier("taskExecutor") TaskExecutor taskExecutor) {
     this.mailSender = mailSender;
     this.taskExecutor = taskExecutor;
   }
 
   public void sendOrderPdfEmail(String toEmail, String fullName, byte[] pdfBytes, String fileName) {
-    taskExecutor.execute(() -> {
-      try {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+    taskExecutor.execute(
+        () -> {
+          try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        helper.setFrom(fromEmail, fromName);
-        helper.setTo(toEmail);
-        helper.setSubject("🧾 Hóa đơn mua hàng - " + appName);
-        helper.setText(
-                String.format("Xin chào %s,<br><br>Vui lòng tìm hóa đơn mua hàng của bạn trong file đính kèm.", fullName),
+            helper.setFrom(fromEmail, fromName);
+            helper.setTo(toEmail);
+            helper.setSubject("🧾 Hóa đơn mua hàng - " + appName);
+            helper.setText(
+                String.format(
+                    "Xin chào %s,<br><br>Vui lòng tìm hóa đơn mua hàng của bạn trong file đính kèm.",
+                    fullName),
                 true);
 
-        helper.addAttachment(fileName, new ByteArrayDataSource(pdfBytes, "application/pdf"));
+            helper.addAttachment(fileName, new ByteArrayDataSource(pdfBytes, "application/pdf"));
 
-        mailSender.send(message);
-        log.info("Order PDF email sent successfully to: {}", toEmail);
-      } catch (Exception e) {
-        log.error("Failed to send order PDF email to {}: {}", toEmail, e.getMessage());
-      }
-    });
+            mailSender.send(message);
+            log.info("Order PDF email sent successfully to: {}", toEmail);
+          } catch (Exception e) {
+            log.error("Failed to send order PDF email to {}: {}", toEmail, e.getMessage());
+          }
+        });
   }
 
   public void sendVerificationEmail(String toEmail, String verificationToken, String fullName) {
-    try {
-      String verificationLink = frontendUrl + "/verify-email?token=" + verificationToken;
-      String emailContent = buildVerificationEmailContent(fullName, verificationLink);
-      String subject = "Xác thực tài khoản " + appName + " - " + fullName;
+    taskExecutor.execute(
+        () -> {
+          try {
+            String verificationLink = frontendUrl + "/verify-email?token=" + verificationToken;
+            String emailContent = buildVerificationEmailContent(fullName, verificationLink);
+            String subject = "Xác thực tài khoản " + appName + " - " + fullName;
 
-      sendHtmlEmail(toEmail, subject, emailContent);
+            sendHtmlEmail(toEmail, subject, emailContent);
 
-      log.info("Verification email sent successfully to: {}", toEmail);
+            log.info("Verification email sent successfully to: {}", toEmail);
 
-    } catch (Exception e) {
-      log.error("Failed to send verification email to {}: {}", toEmail, e.getMessage());
-      throw new RuntimeException("Không thể gửi email xác thực");
-    }
+          } catch (Exception e) {
+            log.error("Failed to send verification email to {}: {}", toEmail, e.getMessage());
+            // Không throw RuntimeException để tránh làm lỗi thread pool
+          }
+        });
   }
 
   /** Send password reset email using SMTP */
   public void sendPasswordResetEmail(String toEmail, String resetToken, String fullName) {
-    try {
-      String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
-      String emailContent = buildPasswordResetEmailContent(fullName, resetLink);
-      String subject = "Đặt lại mật khẩu - " + appName;
+    taskExecutor.execute(
+        () -> {
+          try {
+            String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
+            String emailContent = buildPasswordResetEmailContent(fullName, resetLink);
+            String subject = "Đặt lại mật khẩu - " + appName;
 
-      // Send actual email via SMTP
-      sendHtmlEmail(toEmail, subject, emailContent);
+            sendHtmlEmail(toEmail, subject, emailContent);
 
-      log.info("Password reset email sent successfully to: {}", toEmail);
+            log.info("Password reset email sent successfully to: {}", toEmail);
 
-    } catch (Exception e) {
-      log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
-      throw new RuntimeException("Không thể gửi email đặt lại mật khẩu");
-    }
+          } catch (Exception e) {
+            log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+            // Không throw RuntimeException để tránh làm lỗi thread pool
+          }
+        });
   }
 
   /** Send HTML email via SMTP */
