@@ -4,9 +4,29 @@ import com.eps.shared.interfaces.persistence.IBasePersistence;
 import com.eps.shared.interfaces.services.IBaseService;
 import com.eps.shared.models.HeaderContext;
 import com.eps.shared.models.exceptions.ResponseException;
+
+import com.eps.shared.utils.FnCommon;
+import com.itextpdf.io.font.FontProgramFactory;
+import com.itextpdf.io.font.PdfEncodings;
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.geom.PageSize;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.HorizontalAlignment;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.util.TriConsumer;
+import lombok.extern.slf4j.Slf4j;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.orders.CreateOrderRequest;
+import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders.OrderItemResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders.OrderResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.*;
@@ -21,8 +41,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +55,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService
@@ -47,6 +73,7 @@ public class OrderService
   private final ProductService productService;
   private final CartItemRepository cartItemRepository;
   private final ReviewsRepository reviewRepository;
+  private final ProductRepository productRepository;
 
   @Override
   public IBasePersistence<Order, Long> getPersistence() {
@@ -378,6 +405,144 @@ public class OrderService
   public void deleteById(HeaderContext context, Long id) {
     orderRepository.deleteById(id);
   }
+
+
+  public byte[] generateOrderPdf(Long orderId) {
+    Order order = finById(orderId);
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    try {
+
+      InputStream fontStream =
+              getClass().getClassLoader().getResourceAsStream("msttcorefonts/Times_New_Roman.ttf");
+      if (fontStream == null) {
+        throw new FileNotFoundException("Font file not found in classpath!");
+      }
+
+      byte[] fontBytes = fontStream.readAllBytes();
+      var fontProgram = FontProgramFactory.createFont(fontBytes);
+      PdfFont font = PdfFontFactory.createFont(fontProgram, PdfEncodings.IDENTITY_H);
+
+      PdfWriter writer = new PdfWriter(out);
+      PdfDocument pdf = new PdfDocument(writer);
+      pdf.setDefaultPageSize(new PageSize(200, 600));
+      Document document = new Document(pdf);
+
+      document.setFont(font);
+      document.setFontSize(8);
+
+      InputStream logoStream =
+              getClass().getClassLoader().getResourceAsStream("msttcorefonts/logo.png");
+      if (logoStream == null) {
+        throw new FileNotFoundException("Logo file not found in classpath!");
+      }
+
+      byte[] logoBytes = logoStream.readAllBytes();
+
+      ImageData imageData = ImageDataFactory.create(logoBytes);
+
+      Image logo = new Image(imageData);
+      logo.setHorizontalAlignment(HorizontalAlignment.CENTER);
+      logo.setWidth(50);
+      logo.setHeight(50);
+      document.add(logo);
+
+      document.add(
+              new Paragraph("HÓA ĐƠN BÁN HÀNG")
+                      .setTextAlignment(TextAlignment.CENTER)
+                      .setBold()
+                      .setMarginBottom(10));
+
+      document.add(new Paragraph("Mã đơn hàng: " + order.getCode()).setBold());
+      document.add(new Paragraph("Khách hàng: " + order.getCustomerName()).setBold());
+      if (order.getCustomerPhone() != null) {
+        document.add(new Paragraph("Số ĐT: " + order.getCustomerPhone()).setBold());
+      }
+      LocalDateTime createdAt = order.getCreatedAt().toLocalDateTime();
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+      String formattedDate = createdAt.format(formatter);
+      document.add(new Paragraph("Ngày mua: " + formattedDate).setBold());
+
+      Table table = new Table(new float[] {1, 7, 2, 3});
+      table.setWidth(UnitValue.createPercentValue(100));
+      table.addHeaderCell(
+              new Cell().add(new Paragraph("STT").setBold()).setTextAlignment(TextAlignment.CENTER));
+      table.addHeaderCell(
+              new Cell()
+                      .add(new Paragraph("Tên sản phẩm").setBold())
+                      .setTextAlignment(TextAlignment.LEFT));
+      table.addHeaderCell(
+              new Cell().add(new Paragraph("SL").setBold()).setTextAlignment(TextAlignment.CENTER));
+      table.addHeaderCell(
+              new Cell()
+                      .add(new Paragraph("Thành tiền").setBold())
+                      .setTextAlignment(TextAlignment.RIGHT));
+
+      int index = 1;
+      double totalWithoutDiscount = 0.0;
+      for (var detail : order.getOrderItems()) {
+        log.info("Detail: {}", detail.getVariantInfo());
+        BigDecimal lineTotal = detail.getTotalPrice().multiply(BigDecimal.valueOf(detail.getQuantity()));
+        Product product = productRepository.findByCode(detail.getVariantInfo().get("productCode").toString())
+                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Sản phẩm không tồn tại"));
+
+        table.addCell(
+                new Cell()
+                        .add(new Paragraph(String.valueOf(index++)))
+                        .setTextAlignment(TextAlignment.CENTER));
+        table.addCell(
+                new Cell()
+                        .add(new Paragraph(product.getName()))
+                        .setTextAlignment(TextAlignment.LEFT));
+        table.addCell(
+                new Cell()
+                        .add(new Paragraph(String.valueOf(detail.getQuantity())))
+                        .setTextAlignment(TextAlignment.CENTER));
+        table.addCell(
+                new Cell()
+                        .add(new Paragraph(String.format("%,.0f", lineTotal)))
+                        .setTextAlignment(TextAlignment.RIGHT));
+      }
+      document.add(table);
+
+      BigDecimal discount = order.getDiscountAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+//      double totalWithDiscount = od.getDiscountAmount();
+
+      document.add(
+              new Paragraph("Tổng tiền hoá đơn: " + String.format("%,.0f VNĐ", order.getTotalAmount()))
+                      .setTextAlignment(TextAlignment.RIGHT)
+                      .setBold()
+                      .setMarginTop(10));
+
+      if (discount.compareTo(BigDecimal.ZERO) > 0) {
+        document.add(
+                new Paragraph("Khuyến mãi: -" + String.format("%,.0f VNĐ", order.getDiscountAmount()))
+                        .setTextAlignment(TextAlignment.RIGHT)
+                        .setBold());
+      }
+
+//      document
+//              .add(
+//                      new Paragraph("Phí giao hàng: " + String.format("%,.0f VNĐ", order.get()))
+//                              .setTextAlignment(TextAlignment.RIGHT)
+//                              .setBold())
+//              .setTopMargin(10);
+      document
+              .add(
+                      new Paragraph("Số tiền thanh toán: " + String.format("%,.0f VNĐ", order.getTotalAmount()))
+                              .setTextAlignment(TextAlignment.RIGHT)
+                              .setBold())
+              .setTopMargin(10);
+
+      document.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new ResponseException(HttpStatus.BAD_REQUEST, "Lỗi xuất hoá đơn");
+    }
+
+    return out.toByteArray();
+  }
+
 
 
 

@@ -33,6 +33,7 @@ public class OrderResponse {
   private String paymentMethodName;
   private PaymentStatus paymentStatus;
   private String couponCode;
+  private Double totalDiscount;
   private String note;
   private Timestamp createdAt;
   private Timestamp updatedAt;

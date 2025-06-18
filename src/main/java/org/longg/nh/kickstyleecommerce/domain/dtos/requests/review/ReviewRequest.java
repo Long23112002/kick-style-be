@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.longg.nh.kickstyleecommerce.domain.entities.Product;
 
 import java.util.List;
 
@@ -19,6 +20,8 @@ public class ReviewRequest {
   private Long orderId;
 
   private Integer rating;
+
+  private Long productId;
 
   @NotBlank(message = "Comment không được để trống")
   private String comment;

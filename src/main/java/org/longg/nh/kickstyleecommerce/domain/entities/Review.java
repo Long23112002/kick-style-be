@@ -39,6 +39,9 @@ public class Review {
   @JsonIgnoreProperties({"reviews", "orders", "answers"})
   private User user;
 
+  @Column(name = "product_id", nullable = false)
+  private Long productId;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_id", nullable = false)
   @NotFound(action = NotFoundAction.IGNORE)

@@ -18,6 +18,8 @@ import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
 import org.longg.nh.kickstyleecommerce.domain.services.orders.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -112,6 +114,16 @@ public class OrderController {
       @PathVariable @Parameter(description = "ID đơn hàng") Long orderId,
       @PathVariable @Parameter(description = "ID người dùng") Long userId) {
     return orderService.checkOrderReview(orderId, userId);
+  }
+
+  @GetMapping("/export-pdf/{orderId}")
+  public ResponseEntity<byte[]> generateOrderPdf( @PathVariable Long orderId) {
+    byte[] pdfBytes = orderService.generateOrderPdf(orderId);
+
+    return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=order_" + orderId + ".pdf")
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(pdfBytes);
   }
 
   @Operation(
