@@ -116,28 +116,32 @@ public class ProductService
    */
   private void updateProductStatus(Product product) {
     List<ProductVariant> variants = productVariantRepository.findByProductId(product.getId());
-    
+
     if (variants.isEmpty()) {
       product.setStatus(Status.INACTIVE);
       return;
     }
 
-    // Nếu tất cả variants đều OUT_OF_STOCK thì product cũng OUT_OF_STOCK
     boolean allOutOfStock = variants.stream()
-        .allMatch(variant -> variant.getStatus() == Status.OUT_OF_STOCK);
-    
-    // Nếu có ít nhất 1 variant ACTIVE thì product ACTIVE
-    boolean hasActiveVariant = variants.stream()
-        .anyMatch(variant -> variant.getStatus() == Status.ACTIVE);
+            .allMatch(variant -> variant.getStatus() == Status.OUT_OF_STOCK);
 
     if (allOutOfStock) {
       product.setStatus(Status.OUT_OF_STOCK);
-    } else if (hasActiveVariant) {
-      product.setStatus(Status.ACTIVE);
+      return;
+    }
+
+    Status requestedStatus = product.getStatus();
+
+    if (requestedStatus == Status.ACTIVE || requestedStatus == Status.INACTIVE) {
+      product.setStatus(requestedStatus);
     } else {
-      product.setStatus(Status.INACTIVE);
+      boolean hasActiveVariant = variants.stream()
+              .anyMatch(variant -> variant.getStatus() == Status.ACTIVE);
+
+      product.setStatus(hasActiveVariant ? Status.ACTIVE : Status.INACTIVE);
     }
   }
+
 
   @Override
   public ProductResponse create(

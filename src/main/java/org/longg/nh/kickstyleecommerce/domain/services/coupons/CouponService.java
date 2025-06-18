@@ -98,14 +98,7 @@ public class CouponService
             .findById(id)
             .orElseThrow(
                 () -> new ResponseException(HttpStatus.BAD_REQUEST, "Coupon không tồn tại"));
-
-    // Kiểm tra code không trùng (trừ chính nó)
-    if (!coupon.getCode().equals(request.getCode())
-        && couponRepository.existsByCode(request.getCode())) {
-      throw new ResponseException(HttpStatus.BAD_REQUEST, "Mã coupon đã tồn tại");
-    }
-
-    coupon.setCode(request.getCode());
+    coupon.setCode(coupon.getCode());
     coupon.setName(request.getName());
     coupon.setDescription(request.getDescription());
     coupon.setDiscountType(request.getDiscountType());
@@ -123,6 +116,7 @@ public class CouponService
 
     // Cập nhật user relationships
     couponUserRepository.deleteByCouponId(id);
+    couponUserRepository.flush();
 
     if (request.getUserSpecific() != null
         && request.getUserSpecific()
