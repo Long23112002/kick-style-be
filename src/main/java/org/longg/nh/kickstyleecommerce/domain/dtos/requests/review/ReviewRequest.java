@@ -27,4 +27,6 @@ public class ReviewRequest {
   private String comment;
 
   private List<String> images;
+
+  private Boolean isAdmin;
 }

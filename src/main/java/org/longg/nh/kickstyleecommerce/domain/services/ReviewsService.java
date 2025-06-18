@@ -52,7 +52,17 @@ public class ReviewsService
           HttpStatus.BAD_REQUEST, "Order must be delivered to leave a review");
     }
 
+    Product product =
+        productRepository
+            .findById(reviewRequest.getProductId())
+            .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Product not found"));
+
     Review review = new Review();
+    if (reviewRequest.getIsAdmin() != null && reviewRequest.getIsAdmin()) {
+      review.setIsDeleted(false);
+    } else {
+      review.setIsDeleted(true);
+    }
     review.setRating(reviewRequest.getRating());
     review.setComment(reviewRequest.getComment());
     review.setOrder(order);

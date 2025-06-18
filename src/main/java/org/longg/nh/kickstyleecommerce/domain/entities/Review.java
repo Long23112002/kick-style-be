@@ -69,6 +69,8 @@ public class Review {
   @Column(name = "is_deleted")
   private Boolean isDeleted = false;
 
+  private Boolean isAdmin = false;
+
   @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"review", "user"})
   @JsonManagedReference
