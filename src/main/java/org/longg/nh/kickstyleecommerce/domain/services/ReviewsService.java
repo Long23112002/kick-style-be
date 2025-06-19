@@ -52,10 +52,10 @@ public class ReviewsService
           HttpStatus.BAD_REQUEST, "Order must be delivered to leave a review");
     }
 
-    Product product =
-        productRepository
-            .findById(reviewRequest.getProductId())
-            .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Product not found"));
+    User reviewUser =
+        userRepository
+            .findById(reviewRequest.getUserId())
+            .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "User not found"));
 
     Review review = new Review();
     if (reviewRequest.getIsAdmin() != null && reviewRequest.getIsAdmin()) {
@@ -63,6 +63,7 @@ public class ReviewsService
     } else {
       review.setIsDeleted(true);
     }
+    review.setUser(reviewUser);
     review.setRating(reviewRequest.getRating());
     review.setComment(reviewRequest.getComment());
     review.setOrder(order);
