@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VnpayTransactionRepository extends JpaRepository<VnpayTransaction, Long> {
 
-  @Query("SELECT v FROM VnpayTransaction v WHERE v.order.user.id = :userId")
+  @Query("SELECT v FROM VnpayTransaction v WHERE (:userId IS NULL OR v.order.user.id = :userId)")
   Page<VnpayTransaction> filter(Long userId, Pageable pageable);
 }

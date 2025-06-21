@@ -33,7 +33,8 @@ public class VNPayController {
   }
 
   @GetMapping
-  public Page<VnpayTransaction> filter(Long userId , Pageable pageable){
-    return vnPayService.filter(userId , pageable);
+  public Page<VnpayTransaction> filter(
+      @RequestParam(value = "userId", required = false) Long userId, Pageable pageable) {
+    return vnPayService.filter(userId, pageable);
   }
 }
