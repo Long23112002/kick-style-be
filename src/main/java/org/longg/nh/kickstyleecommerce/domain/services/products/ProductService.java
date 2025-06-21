@@ -577,7 +577,6 @@ public class ProductService
         Object sizeIdsObj = filter.get("sizeIds");
         List<Long> sizeIds = parseArrayParameter(sizeIdsObj);
         if (!sizeIds.isEmpty()) {
-          // Sử dụng EXISTS subquery để tránh duplicate records
           var subquery = query.subquery(ProductVariant.class);
           var subRoot = subquery.from(ProductVariant.class);
           subquery.select(subRoot)

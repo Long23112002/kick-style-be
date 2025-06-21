@@ -27,8 +27,13 @@ public class AnswerService
 
     @Override
     public void postCreateHandler(HeaderContext context, Answers entity, AnswerRequest request) {
+        IBaseService.super.postCreateHandler(context, entity, request);
+    }
+
+    @Override
+    public void validateCreateRequest(HeaderContext context, Answers entity, AnswerRequest request) {
         entity.setReview(reviewsService.getEntityById(context, request.getReviewId()));
         entity.setUser(userService.getEntityById(context, request.getUserId()));
-        IBaseService.super.postCreateHandler(context, entity, request);
+        IBaseService.super.validateCreateRequest(context, entity, request);
     }
 }

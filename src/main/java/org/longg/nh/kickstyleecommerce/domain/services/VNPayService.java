@@ -3,17 +3,23 @@ package org.longg.nh.kickstyleecommerce.domain.services;
 import com.eps.shared.models.exceptions.ResponseException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.longg.nh.kickstyleecommerce.domain.entities.Order;
+import org.longg.nh.kickstyleecommerce.domain.entities.VnpayTransaction;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.OrderStatus;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
 import org.longg.nh.kickstyleecommerce.domain.repositories.OrderRepository;
+import org.longg.nh.kickstyleecommerce.domain.repositories.VnpayTransactionRepository;
 import org.longg.nh.kickstyleecommerce.domain.services.orders.OrderService;
 import org.longg.nh.kickstyleecommerce.infrastructure.config.VNPayConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -27,6 +33,8 @@ public class VNPayService {
   @Autowired private HttpServletRequest request;
 
   @Autowired private OrderRepository orderRepository;
+
+  @Autowired private VnpayTransactionRepository vnpayTransactionRepository;
 
   @Value("${vnpay.url}")
   private String vnPayUrl;
@@ -59,8 +67,14 @@ public class VNPayService {
     return vnPayUrl + "?" + queryUrl;
   }
 
-  public ResponseEntity<?> paymentSuccess(String status, Long orderId) {
-    if (status.equals("00")) {
+  public Page<VnpayTransaction> filter(Long userId, Pageable pageable) {
+    return vnpayTransactionRepository.filter(userId, pageable);
+  }
+
+  public ResponseEntity<?> paymentSuccess(String status, Long orderId, String url) {
+    Map<String, String> vnpParams = extractVnpParams(url);
+
+    if ("00".equals(status)) {
       Order order =
           orderRepository
               .findById(orderId)
@@ -68,12 +82,31 @@ public class VNPayService {
                   () ->
                       new ResponseException(
                           HttpStatus.NOT_FOUND, "Order not found with id: " + orderId));
+
       order.setPaymentStatus(PaymentStatus.PAID);
       orderRepository.save(order);
 
+      VnpayTransaction transaction = new VnpayTransaction();
+      transaction.setTransactionCode(vnpParams.get("vnp_TransactionNo"));
+      transaction.setBankCode(vnpParams.get("vnp_BankCode"));
+      transaction.setPaymentMethod(vnpParams.get("vnp_PayMethod"));
+      transaction.setCardType(vnpParams.get("vnp_CardType"));
+      transaction.setAmount(
+          new BigDecimal(vnpParams.get("vnp_Amount")).divide(BigDecimal.valueOf(100)));
+      transaction.setCurrency(vnpParams.get("vnp_CurrCode"));
+      transaction.setStatus(status);
+      transaction.setOrderInfo(vnpParams.get("vnp_OrderInfo"));
+      transaction.setPayDate(vnpParams.get("vnp_PayDate"));
+      transaction.setResponseCode(vnpParams.get("vnp_ResponseCode"));
+      transaction.setTmnCode(vnpParams.get("vnp_TmnCode"));
+      transaction.setSecureHash(vnpParams.get("vnp_SecureHash"));
+      transaction.setOrder(order);
+
+      vnpayTransactionRepository.save(transaction);
+
       return ResponseEntity.ok("redirect:/success");
     } else {
-      return ResponseEntity.badRequest().build();
+      return ResponseEntity.badRequest().body("Thanh toán thất bại");
     }
   }
 
@@ -105,6 +138,26 @@ public class VNPayService {
     Map<String, String> vnpParams =
         buildParamVNPay(vnpTxnRef, amount, orderType, vnpIpAddress, vnpTmnCode);
     return vnpParams;
+  }
+
+  public Map<String, String> extractVnpParams(String url) {
+    Map<String, String> params = new HashMap<>();
+    try {
+      String[] parts = url.split("\\?");
+      if (parts.length < 2) return params;
+      String query = parts[1];
+      for (String param : query.split("&")) {
+        String[] keyValue = param.split("=");
+        if (keyValue.length == 2) {
+          params.put(
+              URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8),
+              URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8));
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return params;
   }
 
   private Map<String, String> buildParamVNPay(
