@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.longg.nh.kickstyleecommerce.domain.dtos.OrderParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.orders.CreateOrderRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders.OrderResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.Order;
@@ -130,8 +131,9 @@ public class OrderController {
   @GetMapping
   public ResponseEntity<Page<OrderResponse>> getAllOrders(
       @Parameter(hidden = true) HeaderContext context,
+      OrderParam param,
       @Parameter(description = "Thông tin phân trang") Pageable pageable) {
-    Page<OrderResponse> page = orderService.getAllOrders(pageable);
+    Page<OrderResponse> page = orderService.filter(param,pageable);
     return ResponseEntity.ok(page);
   }
 

@@ -25,6 +25,7 @@ import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.longg.nh.kickstyleecommerce.domain.dtos.OrderParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.orders.CreateOrderRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders.OrderItemResponse;
@@ -88,8 +89,8 @@ public class OrderService
         .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Đơn hàng không tồn tại"));
   }
 
-  public Page<OrderResponse> getAllOrders(Pageable pageable) {
-    Page<Order> orders = orderRepository.findAll(pageable);
+  public Page<OrderResponse> filter(OrderParam param, Pageable pageable) {
+    Page<Order> orders = orderRepository.filter( param,pageable);
     return orders.map(this::mapToOrderResponse);
   }
 
