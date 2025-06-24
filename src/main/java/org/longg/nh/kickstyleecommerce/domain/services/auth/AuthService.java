@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.LoginRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.RegisterRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.ChangePasswordRequest;
+import org.longg.nh.kickstyleecommerce.domain.dtos.requests.auth.UpdateUserRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.AuthResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.AccessToken;
@@ -262,6 +263,66 @@ public class AuthService {
 
     log.info("Password changed successfully for user: {}", user.getEmail());
     return "Đổi mật khẩu thành công! Vui lòng đăng nhập lại.";
+  }
+
+  /** Cập nhật thông tin người dùng mà không cần mật khẩu */
+  @Transactional
+  public UserResponse updateUserInfo(String token, UpdateUserRequest request) {
+    log.info("Updating user information for token: {}", JwtUtils.maskToken(token));
+
+    // Validate access token và lấy user
+    AccessToken accessToken = tokenService
+        .validateAccessToken(token)
+        .orElseThrow(() -> new ResponseException(
+            HttpStatus.UNAUTHORIZED, "Token không hợp lệ hoặc đã hết hạn"));
+
+    User user = accessToken.getUser();
+
+    // Kiểm tra nếu thay đổi email hoặc số điện thoại
+    if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+      if (userRepository.existsByEmail(request.getEmail())) {
+        throw new ResponseException(HttpStatus.CONFLICT, "Email đã được sử dụng bởi tài khoản khác");
+      }
+      user.setEmail(request.getEmail());
+    }
+
+    if (request.getPhone() != null && !request.getPhone().equals(user.getPhone())) {
+      if (userRepository.existsByPhone(request.getPhone())) {
+        throw new ResponseException(HttpStatus.CONFLICT, "Số điện thoại đã được sử dụng bởi tài khoản khác");
+      }
+      user.setPhone(request.getPhone());
+    }
+
+    // Cập nhật các thông tin khác
+    if (request.getFullName() != null) {
+      user.setFullName(request.getFullName());
+    }
+
+    if (request.getAddress() != null) {
+      user.setAddress(request.getAddress());
+    }
+
+    if (request.getDistrict() != null) {
+      user.setDistrict(request.getDistrict());
+    }
+
+    if (request.getWard() != null) {
+      user.setWard(request.getWard());
+    }
+
+    if (request.getGender() != null) {
+      user.setGender(request.getGender());
+    }
+
+    if (request.getAvatarUrl() != null) {
+      user.setAvatarUrl(request.getAvatarUrl());
+    }
+
+    // Lưu thông tin đã cập nhật
+    User updatedUser = userRepository.save(user);
+    log.info("User information updated successfully for: {}", updatedUser.getEmail());
+
+    return buildUserResponse(updatedUser);
   }
 
   // Helper methods
