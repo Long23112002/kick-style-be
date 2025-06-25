@@ -33,4 +33,6 @@ public class UpdateUserRequest {
     private Gender gender;
     
     private String avatarUrl;
+
+    private Long roleId;
 } 

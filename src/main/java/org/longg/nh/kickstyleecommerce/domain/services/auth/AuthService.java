@@ -271,24 +271,33 @@ public class AuthService {
     log.info("Updating user information for token: {}", JwtUtils.maskToken(token));
 
     // Validate access token và lấy user
-    AccessToken accessToken = tokenService
-        .validateAccessToken(token)
-        .orElseThrow(() -> new ResponseException(
-            HttpStatus.UNAUTHORIZED, "Token không hợp lệ hoặc đã hết hạn"));
+    AccessToken accessToken =
+        tokenService
+            .validateAccessToken(token)
+            .orElseThrow(
+                () ->
+                    new ResponseException(
+                        HttpStatus.UNAUTHORIZED, "Token không hợp lệ hoặc đã hết hạn"));
+    Role userRole =
+        roleRepository
+            .findById(request.getRoleId())
+            .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Role không tồn tại"));
 
     User user = accessToken.getUser();
 
     // Kiểm tra nếu thay đổi email hoặc số điện thoại
     if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
       if (userRepository.existsByEmail(request.getEmail())) {
-        throw new ResponseException(HttpStatus.CONFLICT, "Email đã được sử dụng bởi tài khoản khác");
+        throw new ResponseException(
+            HttpStatus.CONFLICT, "Email đã được sử dụng bởi tài khoản khác");
       }
       user.setEmail(request.getEmail());
     }
 
     if (request.getPhone() != null && !request.getPhone().equals(user.getPhone())) {
       if (userRepository.existsByPhone(request.getPhone())) {
-        throw new ResponseException(HttpStatus.CONFLICT, "Số điện thoại đã được sử dụng bởi tài khoản khác");
+        throw new ResponseException(
+            HttpStatus.CONFLICT, "Số điện thoại đã được sử dụng bởi tài khoản khác");
       }
       user.setPhone(request.getPhone());
     }
@@ -317,6 +326,7 @@ public class AuthService {
     if (request.getAvatarUrl() != null) {
       user.setAvatarUrl(request.getAvatarUrl());
     }
+    user.setRole(userRole);
 
     // Lưu thông tin đã cập nhật
     User updatedUser = userRepository.save(user);
