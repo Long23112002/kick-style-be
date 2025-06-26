@@ -205,17 +205,26 @@ public class ContactService implements IBaseService<Contact, Long, ContactRespon
     }
 
     private ContactReplyResponse mapToContactReplyResponse(ContactReply reply) {
+        Long adminId = null;
+        String adminName = null;
+
+        if (reply.getAdmin() != null) {
+            adminId = reply.getAdmin().getId();
+            adminName = reply.getAdmin().getFullName();
+        }
+
         return ContactReplyResponse.builder()
                 .id(reply.getId())
                 .contactId(reply.getContact().getId())
-                .adminId(reply.getAdmin().getId())
-                .adminName(reply.getAdmin().getFullName())
+                .adminId(adminId)
+                .adminName(adminName)
                 .replyMessage(reply.getReplyMessage())
                 .isEmailSent(reply.getIsEmailSent())
                 .emailSentAt(reply.getEmailSentAt())
                 .createdAt(reply.getCreatedAt())
                 .build();
     }
+
 
     public void deleteById(HeaderContext context, Long id) {
         contactRepository.deleteById(id);
