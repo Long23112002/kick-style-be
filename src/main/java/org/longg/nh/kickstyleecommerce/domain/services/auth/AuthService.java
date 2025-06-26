@@ -267,13 +267,13 @@ public class AuthService {
 
   /** Cập nhật thông tin người dùng mà không cần mật khẩu */
   @Transactional
-  public UserResponse updateUserInfo(String token, UpdateUserRequest request) {
-    log.info("Updating user information for token: {}", JwtUtils.maskToken(token));
+  public UserResponse updateUserInfo( UpdateUserRequest request) {
+    log.info("Updating user information for token: {}", JwtUtils.maskToken(request.getToken()));
 
     // Validate access token và lấy user
     AccessToken accessToken =
         tokenService
-            .validateAccessToken(token)
+            .validateAccessToken(request.getToken())
             .orElseThrow(
                 () ->
                     new ResponseException(
@@ -284,15 +284,6 @@ public class AuthService {
             .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Role không tồn tại"));
 
     User user = accessToken.getUser();
-
-    // Kiểm tra nếu thay đổi email hoặc số điện thoại
-    if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
-      if (userRepository.existsByEmail(request.getEmail())) {
-        throw new ResponseException(
-            HttpStatus.CONFLICT, "Email đã được sử dụng bởi tài khoản khác");
-      }
-      user.setEmail(request.getEmail());
-    }
 
     if (request.getPhone() != null && !request.getPhone().equals(user.getPhone())) {
       if (userRepository.existsByPhone(request.getPhone())) {

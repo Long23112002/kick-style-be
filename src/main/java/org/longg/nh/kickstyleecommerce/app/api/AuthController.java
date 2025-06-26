@@ -88,10 +88,9 @@ public class AuthController {
   /** Cập nhật thông tin người dùng */
   @PutMapping("/update-profile")
   public ResponseEntity<UserResponse> updateUserInfo(
-      @RequestHeader("Authorization") String authHeader,
       @Valid @RequestBody UpdateUserRequest request) {
-    String token = JwtUtils.extractTokenFromHeader(authHeader);
-    UserResponse userResponse = authService.updateUserInfo(token, request);
+//    String token = JwtUtils.extractTokenFromHeader(request.getToken());
+    UserResponse userResponse = authService.updateUserInfo( request);
     return ResponseEntity.ok(userResponse);
   }
 }

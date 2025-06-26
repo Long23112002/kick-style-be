@@ -18,11 +18,10 @@ public class UpdateUserRequest {
     @Size(min = 2, max = 100, message = "Họ tên phải từ 2 đến 100 ký tự")
     private String fullName;
 
-    @Email(message = "Email không hợp lệ")
-    private String email;
-
     @Pattern(regexp = "^(0[0-9]{9})$", message = "Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số")
     private String phone;
+
+    private String token;
 
     private String address;
     
@@ -35,4 +34,5 @@ public class UpdateUserRequest {
     private String avatarUrl;
 
     private Long roleId;
+
 } 
