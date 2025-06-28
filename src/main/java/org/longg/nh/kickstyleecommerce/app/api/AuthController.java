@@ -78,10 +78,8 @@ public class AuthController {
   /** Đổi mật khẩu */
   @PostMapping("/change-password")
   public ResponseEntity<String> changePassword(
-      @RequestHeader("Authorization") String authHeader,
       @Valid @RequestBody ChangePasswordRequest request) {
-    String token = JwtUtils.extractTokenFromHeader(authHeader);
-    String result = authService.changePassword(token, request);
+    String result = authService.changePassword(request.getToken(), request);
     return ResponseEntity.ok(result);
   }
 
