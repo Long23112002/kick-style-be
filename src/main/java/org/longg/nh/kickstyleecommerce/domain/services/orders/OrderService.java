@@ -237,11 +237,11 @@ public class OrderService
               }
 
               // Tính giá
-              BigDecimal unitPrice = variant.getProduct().getPrice();
-              if (variant.getPriceAdjustment() != null
-                  && variant.getPriceAdjustment().compareTo(BigDecimal.ZERO) != 0) {
-                unitPrice = unitPrice.add(variant.getPriceAdjustment());
-              }
+              BigDecimal unitPrice = variant.getPriceAdjustment();
+//              if (variant.getPriceAdjustment() != null
+//                  && variant.getPriceAdjustment().compareTo(BigDecimal.ZERO) != 0) {
+//                unitPrice = unitPrice.add(variant.getPriceAdjustment());
+//              }
 
               // Tạo variant info để lưu snapshot
               Map<String, Object> variantInfo = new HashMap<>();
