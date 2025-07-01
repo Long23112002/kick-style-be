@@ -45,13 +45,13 @@ public interface UserRepository extends IBaseRepository<User, Long> {
     
     // Lấy top customer chi tiêu nhiều nhất (sử dụng native query để có LIMIT)
     @Query(value = "SELECT u.id as userId, u.full_name as fullName, u.email, " +
-                   "COALESCE(SUM(CASE WHEN o.payment_status = 'PAID' THEN o.total_amount ELSE 0 END), 0) as totalSpent, " +
-                   "COUNT(CASE WHEN o.payment_status = 'PAID' THEN o.id END) as totalOrders " +
+                   "COALESCE(SUM(CASE WHEN o.status = 'DELIVERED' THEN o.total_amount ELSE 0 END), 0) as totalSpent, " +
+                   "COUNT(CASE WHEN o.status = 'DELIVERED' THEN o.id END) as totalOrders " +
                    "FROM users.user u LEFT JOIN orders.orders o ON u.id = o.user_id " +
                    "WHERE u.is_deleted = false " +
                    "GROUP BY u.id, u.full_name, u.email " +
-                   "HAVING COALESCE(SUM(CASE WHEN o.payment_status = 'PAID' THEN o.total_amount ELSE 0 END), 0) > 0 " +
-                   "ORDER BY COALESCE(SUM(CASE WHEN o.payment_status = 'PAID' THEN o.total_amount ELSE 0 END), 0) DESC " +
+                   "HAVING COALESCE(SUM(CASE WHEN o.status = 'DELIVERED' THEN o.total_amount ELSE 0 END), 0) > 0 " +
+                   "ORDER BY COALESCE(SUM(CASE WHEN o.status = 'DELIVERED' THEN o.total_amount ELSE 0 END), 0) DESC " +
                    "LIMIT :limit", nativeQuery = true)
     List<Object[]> getTopCustomers(@Param("limit") int limit);
 }
