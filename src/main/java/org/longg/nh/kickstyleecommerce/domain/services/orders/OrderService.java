@@ -127,8 +127,6 @@ public class OrderService
       discountAmount = coupon.calculateDiscount(subtotal);
     }
 
-    // Tính tổng tiền
-    BigDecimal totalAmount = subtotal.subtract(discountAmount);
 
     // Tạo order
     Order order =
@@ -144,7 +142,7 @@ public class OrderService
             .shippingWard(request.getShippingWard())
             .subtotal(subtotal)
             .discountAmount(discountAmount)
-            .totalAmount(totalAmount)
+            .totalAmount(request.getTotalAmount())
             .paymentMethod(paymentMethod)
             .paymentStatus(PaymentStatus.PENDING)
             .coupon(coupon)

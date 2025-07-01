@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -38,6 +39,8 @@ public class CreateOrderRequest {
 
   @Size(max = 500, message = "Ghi chú không được vượt quá 500 ký tự")
   private String note;
+
+  private BigDecimal totalAmount;
 
   private String couponCode;
 
