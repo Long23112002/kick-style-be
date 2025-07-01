@@ -12,7 +12,8 @@ import java.util.List;
 @Repository
 public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
     
-    List<OrderItem> findByOrderId(Long orderId);
+    @Query("SELECT oi FROM OrderItem oi WHERE oi.order.id = :orderId ORDER BY oi.id DESC")
+    List<OrderItem> findByOrderId(@Param("orderId") Long orderId);
     
     // Thống kê sản phẩm bán chạy theo ngày
     @Query("SELECT oi.variant.id as variantId, oi.productName, " +

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.statistics.ProductSalesResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.statistics.RevenueStatResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.users.UserStatResponse;
+import org.longg.nh.kickstyleecommerce.domain.entities.enums.OrderStatus;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.PaymentStatus;
 import org.longg.nh.kickstyleecommerce.domain.repositories.OrderItemRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.OrderRepository;
@@ -29,8 +30,8 @@ public class StatisticsService {
   // Revenue Statistics
   public RevenueStatResponse getTotalRevenueByDate(LocalDate date) {
     Timestamp timestamp = Timestamp.valueOf(date.atStartOfDay());
-    BigDecimal revenue = orderRepository.getTotalRevenueByDate(PaymentStatus.PAID, timestamp);
-    Long orderCount = orderRepository.getTotalOrdersByDate(PaymentStatus.PAID, timestamp);
+    BigDecimal revenue = orderRepository.getTotalRevenueByDate(OrderStatus.DELIVERED, timestamp);
+    Long orderCount = orderRepository.getTotalOrdersByDate(OrderStatus.DELIVERED, timestamp);
     
     return RevenueStatResponse.builder()
         .period(date.toString())
@@ -41,8 +42,8 @@ public class StatisticsService {
   }
 
   public RevenueStatResponse getTotalRevenueByMonth(int year, int month) {
-    BigDecimal revenue = orderRepository.getTotalRevenueByMonth(PaymentStatus.PAID, year, month);
-    Long orderCount = orderRepository.getTotalOrdersByMonth(PaymentStatus.PAID, year, month);
+    BigDecimal revenue = orderRepository.getTotalRevenueByMonth(OrderStatus.DELIVERED, year, month);
+    Long orderCount = orderRepository.getTotalOrdersByMonth(OrderStatus.DELIVERED, year, month);
     
     return RevenueStatResponse.builder()
         .period(year + "-" + String.format("%02d", month))
@@ -53,8 +54,8 @@ public class StatisticsService {
   }
 
   public RevenueStatResponse getTotalRevenueByYear(int year) {
-    BigDecimal revenue = orderRepository.getTotalRevenueByYear(PaymentStatus.PAID, year);
-    Long orderCount = orderRepository.getTotalOrdersByYear(PaymentStatus.PAID, year);
+    BigDecimal revenue = orderRepository.getTotalRevenueByYear(OrderStatus.DELIVERED, year);
+    Long orderCount = orderRepository.getTotalOrdersByYear(OrderStatus.DELIVERED, year);
     
     return RevenueStatResponse.builder()
         .period(String.valueOf(year))
