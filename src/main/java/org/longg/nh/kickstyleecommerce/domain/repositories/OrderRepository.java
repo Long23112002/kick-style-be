@@ -41,7 +41,7 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
   @Query(
       "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
           + "WHERE o.status = :orderStatus "
-          + "AND DATE(o.createdAt) = DATE(:date)")
+          + "AND DATE(o.updatedAt) = DATE(:date)")
   BigDecimal getTotalRevenueByDate(
       @Param("orderStatus") OrderStatus orderStatus, @Param("date") Timestamp date);
 
@@ -49,7 +49,7 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
   @Query(
       "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
           + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.createdAt) = :year AND MONTH(o.createdAt) = :month")
+          + "AND YEAR(o.updatedAt) = :year AND MONTH(o.createdAt) = :month")
   BigDecimal getTotalRevenueByMonth(
           @Param("orderStatus") OrderStatus orderStatus,
       @Param("year") int year,
@@ -59,7 +59,7 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
   @Query(
       "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
           + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.createdAt) = :year")
+          + "AND YEAR(o.updatedAt) = :year")
   BigDecimal getTotalRevenueByYear(
           @Param("orderStatus") OrderStatus orderStatus, @Param("year") int year);
 
@@ -67,7 +67,7 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
   @Query(
       "SELECT COUNT(o) FROM Order o "
           + "WHERE o.status = :orderStatus "
-          + "AND DATE(o.createdAt) = DATE(:date)")
+          + "AND DATE(o.updatedAt) = DATE(:date)")
   Long getTotalOrdersByDate(
           @Param("orderStatus") OrderStatus orderStatus, @Param("date") Timestamp date);
 
@@ -79,7 +79,7 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
   @Query(
       "SELECT COUNT(o) FROM Order o "
           + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.createdAt) = :year AND MONTH(o.createdAt) = :month")
+          + "AND YEAR(o.updatedAt) = :year AND MONTH(o.updatedAt) = :month")
   Long getTotalOrdersByMonth(
           @Param("orderStatus") OrderStatus orderStatus,
       @Param("year") int year,
@@ -88,26 +88,26 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
   // Thống kê số đơn hàng theo tháng
   @Query(
       "SELECT COUNT(o) FROM Order o "
-          + "WHERE YEAR(o.createdAt) = :year AND MONTH(o.createdAt) = :month")
+          + "WHERE YEAR(o.updatedAt) = :year AND MONTH(o.updatedAt) = :month")
   Long getOrderCountByMonth(@Param("year") int year, @Param("month") int month);
 
   // Thống kê số đơn hàng theo năm với điều kiện payment status
   @Query(
       "SELECT COUNT(o) FROM Order o "
           + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.createdAt) = :year")
+          + "AND YEAR(o.updatedAt) = :year")
   Long getTotalOrdersByYear(
           @Param("orderStatus") OrderStatus orderStatus, @Param("year") int year);
 
   // Thống kê số đơn hàng theo năm
-  @Query("SELECT COUNT(o) FROM Order o " + "WHERE YEAR(o.createdAt) = :year")
+  @Query("SELECT COUNT(o) FROM Order o " + "WHERE YEAR(o.updatedAt) = :year")
   Long getOrderCountByYear(@Param("year") int year);
 
   // Doanh thu trong khoảng thời gian
   @Query(
       "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
           + "WHERE o.status = :orderStatus "
-          + "AND o.createdAt BETWEEN :startDate AND :endDate")
+          + "AND o.updatedAt BETWEEN :startDate AND :endDate")
   BigDecimal getTotalRevenueBetweenDates(
           @Param("orderStatus") OrderStatus orderStatus,
       @Param("startDate") Timestamp startDate,
