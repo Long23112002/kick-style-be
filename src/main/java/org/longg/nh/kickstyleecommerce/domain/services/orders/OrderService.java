@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.longg.nh.kickstyleecommerce.domain.dtos.OrderParam;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.orders.CreateOrderRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.auth.UserResponse;
+import org.longg.nh.kickstyleecommerce.domain.dtos.responses.coupons.CouponResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders.OrderItemResponse;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.orders.OrderResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.*;
@@ -548,6 +549,7 @@ public class OrderService
         .userEmail(order.getUser() != null ? order.getUser().getEmail() : null)
         .code(order.getCode())
         .status(order.getStatus())
+            .coupon(order.getCoupon() != null ? mapToCouponResponse(order.getCoupon()) : null)
         .customerName(order.getCustomerName())
         .customerEmail(order.getCustomerEmail())
         .customerPhone(order.getCustomerPhone())
@@ -561,7 +563,6 @@ public class OrderService
         .paymentMethodName(
             order.getPaymentMethod() != null ? order.getPaymentMethod().getName() : null)
         .paymentStatus(order.getPaymentStatus())
-        .couponCode(order.getCouponCode())
         .note(order.getNote())
         .createdAt(order.getCreatedAt())
         .updatedAt(order.getUpdatedAt())
@@ -571,6 +572,36 @@ public class OrderService
                 order.getUser() != null ? order.getUser().getId() : null, order.getId()))
         .build();
   }
+
+    public CouponResponse mapToCouponResponse(Coupon coupon) {
+        List<Long> userIds = null;
+
+        if (coupon.getUserSpecific() != null && coupon.getUserSpecific()) {
+            userIds = couponUserRepository.findUserIdsByCouponId(coupon.getId());
+        }
+
+        return CouponResponse.builder()
+                .id(coupon.getId())
+                .code(coupon.getCode())
+                .name(coupon.getName())
+                .description(coupon.getDescription())
+                .discountType(coupon.getDiscountType())
+                .discountValue(coupon.getDiscountValue())
+                .minimumAmount(coupon.getMinimumAmount())
+                .maximumDiscount(coupon.getMaximumDiscount())
+                .maxUsageCount(coupon.getMaxUsageCount())
+                .usedCount(coupon.getUsedCount())
+                .startDate(coupon.getStartDate())
+                .endDate(coupon.getEndDate())
+                .validFrom(coupon.getValidFrom())
+                .validTo(coupon.getValidTo())
+                .userSpecific(coupon.getUserSpecific())
+                .isActive(coupon.getIsActive())
+                .userIds(userIds)
+                .createdAt(coupon.getCreatedAt())
+                .updatedAt(coupon.getUpdatedAt())
+                .build();
+    }
 
   // Override để có đúng signature với Controller
   public void deleteById(HeaderContext context, Long id) {
