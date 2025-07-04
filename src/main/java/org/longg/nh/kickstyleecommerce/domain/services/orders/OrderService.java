@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -237,17 +238,30 @@ public class OrderService
               }
 
               // Tính giá
-              BigDecimal unitPrice = variant.getPriceAdjustment();
-//              if (variant.getPriceAdjustment() != null
-//                  && variant.getPriceAdjustment().compareTo(BigDecimal.ZERO) != 0) {
-//                unitPrice = unitPrice.add(variant.getPriceAdjustment());
-//              }
+              BigDecimal unitPrice = variant.getProduct().getPrice();
+              if (variant.getPriceAdjustment() != null 
+                  && variant.getPriceAdjustment().compareTo(BigDecimal.ZERO) != 0) {
+                unitPrice = unitPrice.add(variant.getPriceAdjustment());
+              }
 
               // Tạo variant info để lưu snapshot
               Map<String, Object> variantInfo = new HashMap<>();
               variantInfo.put("sizeName", variant.getSize().getName());
               variantInfo.put("colorName", variant.getColor().getName());
               variantInfo.put("productCode", variant.getProduct().getCode());
+              // Lưu cả productId để sau này có thể dùng findProductForOrderById
+              variantInfo.put("productId", variant.getProduct().getId());
+              // Lưu variantId để có thể dễ dàng tham chiếu sau này
+              variantInfo.put("variantId", variant.getId());
+              // Lưu tên sản phẩm
+              variantInfo.put("productName", variant.getProduct().getName());
+              // Lưu thêm thông tin hình ảnh của sản phẩm
+              variantInfo.put("productImages", variant.getProduct().getImageUrls());
+              // Lưu thêm thông tin slug của sản phẩm
+              variantInfo.put("productSlug", variant.getProduct().getSlug());
+              // Lưu giá sản phẩm
+              variantInfo.put("productPrice", variant.getProduct().getPrice());
+              variantInfo.put("productSalePrice", variant.getProduct().getSalePrice());
 
               return OrderItem.builder()
                   .variant(variant)
@@ -336,6 +350,10 @@ public class OrderService
     return mapToOrderResponse(order);
   }
 
+  /**
+   * Lấy danh sách đơn hàng của một user, đảm bảo thông tin sản phẩm được trả về đầy đủ
+   * kể cả khi sản phẩm đã bị xóa mềm
+   */
   public List<OrderResponse> getOrdersByUser(Long userId) {
     return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
         .map(this::mapToOrderResponse)
@@ -353,23 +371,174 @@ public class OrderService
   }
 
   public OrderResponse mapToOrderResponse(Order order) {
-    List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
+    // Sử dụng findByOrderIdNative để lấy thông tin OrderItems bỏ qua soft-delete filters
+    List<OrderItem> orderItems = orderItemRepository.findByOrderIdNative(order.getId());
+    
+    // Tạo danh sách product codes từ orderItems
+    List<String> productCodes = orderItems.stream()
+        .filter(item -> item.getVariantInfo() != null 
+            && item.getVariantInfo().containsKey("productCode"))
+        .map(item -> item.getVariantInfo().get("productCode").toString())
+        .distinct()
+        .collect(Collectors.toList());
+    
+    // Lấy tất cả products cùng lúc
+    Map<String, Product> productsByCode = new HashMap<>();
+    if (!productCodes.isEmpty()) {
+        productRepository.findProductsByCodesIncludingDeleted(productCodes).forEach(product -> 
+            productsByCode.put(product.getCode(), product));
+    }
 
     List<OrderItemResponse> orderItemResponses =
         orderItems.stream()
             .map(
-                item ->
-                    OrderItemResponse.builder()
+                item -> {
+                    Long productId = null;
+                    Long variantId = null;
+                    
+                    // Lấy variant ID
+                    if (item.getVariant() != null) {
+                        variantId = item.getVariant().getId();
+                    } else if (item.getVariantInfo() != null && item.getVariantInfo().containsKey("variantId")) {
+                        try {
+                            variantId = Long.valueOf(item.getVariantInfo().get("variantId").toString());
+                        } catch (Exception e) {
+                            log.error("Error parsing variantId from variantInfo: {}", e.getMessage());
+                        }
+                    }
+                    
+                    // Khởi tạo các giá trị mặc định
+                    List<String> productImages = null;
+                    String productSlug = null;
+                    BigDecimal productPrice = null;
+                    BigDecimal productSalePrice = null;
+                    String productName = item.getProductName(); // Mặc định lấy từ OrderItem
+                    
+                    // Lấy productId và thông tin product từ code
+                    Product foundProduct = null;
+                    if (item.getVariantInfo() != null && item.getVariantInfo().containsKey("productCode")) {
+                        String productCode = item.getVariantInfo().get("productCode").toString();
+                        foundProduct = productsByCode.get(productCode);
+                        
+                        if (foundProduct != null) {
+                            productId = foundProduct.getId();
+                            productImages = foundProduct.getImageUrls();
+                            productSlug = foundProduct.getSlug();
+                            productPrice = foundProduct.getPrice();
+                            productSalePrice = foundProduct.getSalePrice();
+                            productName = foundProduct.getName();
+                        }
+                    }
+                    
+                    // Nếu không tìm thấy từ code, thử lấy từ variantInfo
+                    if (foundProduct == null) {
+                        if (item.getVariantInfo() != null && item.getVariantInfo().containsKey("productId")) {
+                            try {
+                                productId = Long.valueOf(item.getVariantInfo().get("productId").toString());
+                                
+                                Optional<Product> productOpt = productRepository.findProductByIdIncludingDeleted(productId);
+                                if (productOpt.isPresent()) {
+                                    Product product = productOpt.get();
+                                    productImages = product.getImageUrls();
+                                    productSlug = product.getSlug();
+                                    productPrice = product.getPrice();
+                                    productSalePrice = product.getSalePrice();
+                                    productName = product.getName();
+                                }
+                            } catch (Exception e) {
+                                log.warn("Error fetching product for ID from variantInfo: {}", e.getMessage());
+                            }
+                        }
+                    }
+                    
+                    // Nếu vẫn không tìm được thông tin product, thử lấy từ variant
+                    if (productId == null && item.getVariant() != null && item.getVariant().getProduct() != null) {
+                        try {
+                            Product product = item.getVariant().getProduct();
+                            productId = product.getId();
+                            productImages = product.getImageUrls();
+                            productSlug = product.getSlug();
+                            productPrice = product.getPrice();
+                            productSalePrice = product.getSalePrice();
+                            productName = product.getName();
+                        } catch (Exception e) {
+                            log.warn("Error getting product from variant: {}", e.getMessage());
+                        }
+                    }
+                    
+                    // Đảm bảo productId không null trong response
+                    if (productId == null) {
+                        log.warn("Could not determine productId for order item {}, using placeholder", item.getId());
+                        productId = -1L; // Placeholder ID để không bị null
+                    }
+                    
+                    // Lấy thông tin từ variantInfo nếu vẫn chưa có
+                    if (productImages == null && item.getVariantInfo() != null && item.getVariantInfo().containsKey("productImages")) {
+                        try {
+                            productImages = (List<String>) item.getVariantInfo().get("productImages");
+                        } catch (Exception e) {
+                            log.error("Error retrieving product images from variantInfo: {}", e.getMessage());
+                        }
+                    }
+                    
+                    if (productSlug == null && item.getVariantInfo() != null && item.getVariantInfo().containsKey("productSlug")) {
+                        productSlug = item.getVariantInfo().get("productSlug").toString();
+                    }
+                    
+                    if (productPrice == null && item.getVariantInfo() != null && item.getVariantInfo().containsKey("productPrice")) {
+                        try {
+                            Object priceObj = item.getVariantInfo().get("productPrice");
+                            if (priceObj instanceof BigDecimal) {
+                                productPrice = (BigDecimal) priceObj;
+                            } else if (priceObj instanceof Number) {
+                                productPrice = BigDecimal.valueOf(((Number) priceObj).doubleValue());
+                            } else if (priceObj instanceof String) {
+                                productPrice = new BigDecimal((String) priceObj);
+                            }
+                        } catch (Exception e) {
+                            log.error("Error retrieving product price from variantInfo: {}", e.getMessage());
+                        }
+                    }
+                    
+                    // Đảm bảo các giá trị không bị null
+                    if (productImages == null) {
+                        productImages = new ArrayList<>();
+                    }
+                    
+                    if (productSlug == null) {
+                        productSlug = "deleted-product";
+                    }
+                    
+                    if (productPrice == null) {
+                        // Sử dụng unitPrice của OrderItem nếu không có giá khác
+                        productPrice = item.getUnitPrice();
+                    }
+                    
+                    if (productSalePrice == null) {
+                        // Nếu không có giá khuyến mãi, dùng giá chính
+                        productSalePrice = productPrice;
+                    }
+                    
+                    if (productName == null || productName.isEmpty()) {
+                        productName = "Sản phẩm đã xóa";
+                    }
+                    
+                    return OrderItemResponse.builder()
                         .id(item.getId())
-                        .variantId(item.getVariant() != null ? item.getVariant().getId() : null)
-                        .productName(item.getProductName())
+                        .variantId(variantId)
+                        .productName(productName)
                         .variantInfo(item.getVariantInfo())
-                            .productId(item.getVariant().getProduct().getId())
+                        .productId(productId)
+                        .productImages(productImages)
+                        .productSlug(productSlug)
+                        .productPrice(productPrice)
+                        .productSalePrice(productSalePrice)
                         .quantity(item.getQuantity())
                         .unitPrice(item.getUnitPrice())
                         .totalPrice(item.getTotalPrice())
                         .createdAt(item.getCreatedAt())
-                        .build())
+                        .build();
+                })
             .collect(Collectors.toList());
 
     return OrderResponse.builder()
@@ -485,18 +654,37 @@ public class OrderService
         log.info("Detail: {}", detail.getVariantInfo());
         BigDecimal lineTotal =
             detail.getTotalPrice().multiply(BigDecimal.valueOf(detail.getQuantity()));
-        Product product =
-            productRepository
-                .findByCode(detail.getVariantInfo().get("productCode").toString())
-                .orElseThrow(
-                    () -> new ResponseException(HttpStatus.BAD_REQUEST, "Sản phẩm không tồn tại"));
+        
+        // Sử dụng findByCode mới có thể truy vấn được cả product đã soft-deleted
+        Product product = null;
+        try {
+            // Trước tiên thử tìm bằng code từ repository, sử dụng phương thức findByCodeIncludingDeleted 
+            // để lấy cả sản phẩm đã soft-deleted
+            product = productRepository
+                .findByCodeIncludingDeleted(detail.getVariantInfo().get("productCode").toString())
+                .orElse(null);
+                
+            // Nếu không tìm thấy và có productId trong variantInfo, thử tìm bằng ID kể cả đã xóa
+            if (product == null && detail.getVariantInfo().containsKey("productId")) {
+                Long productId = Long.valueOf(detail.getVariantInfo().get("productId").toString());
+                product = productService.findProductForOrderById(productId);
+            }
+        } catch (Exception e) {
+            // Nếu lỗi, tạo thông tin sản phẩm mặc định
+            log.error("Error retrieving product for order PDF: {}", e.getMessage());
+        }
+        
+        String productName = detail.getProductName(); // Dùng tên từ order item nếu không tìm thấy product
+        if (product != null) {
+            productName = product.getName();
+        }
 
         table.addCell(
             new Cell()
                 .add(new Paragraph(String.valueOf(index++)))
                 .setTextAlignment(TextAlignment.CENTER));
         table.addCell(
-            new Cell().add(new Paragraph(product.getName())).setTextAlignment(TextAlignment.LEFT));
+            new Cell().add(new Paragraph(productName)).setTextAlignment(TextAlignment.LEFT));
         table.addCell(
             new Cell()
                 .add(new Paragraph(String.valueOf(detail.getQuantity())))
@@ -555,5 +743,45 @@ public class OrderService
         "hoa-don-" + order.getCode() + ".pdf");
 
     return pdf;
+  }
+
+  private OrderItem createOrderItemFromCartItem(CartItem cartItem, Order order) {
+    OrderItem orderItem = new OrderItem();
+    orderItem.setOrder(order);
+    orderItem.setVariant(cartItem.getVariant());
+    orderItem.setQuantity(cartItem.getQuantity());
+    
+    // Lấy giá từ variant
+    BigDecimal unitPrice = cartItem.getVariant().getProduct().getPrice();
+    if (cartItem.getVariant().getPriceAdjustment() != null && 
+        cartItem.getVariant().getPriceAdjustment().compareTo(BigDecimal.ZERO) != 0) {
+      unitPrice = unitPrice.add(cartItem.getVariant().getPriceAdjustment());
+    }
+    orderItem.setUnitPrice(unitPrice);
+
+    // Snapshot của variant information để đảm bảo data integrity
+    Map<String, Object> variantInfo = new HashMap<>();
+    if (cartItem.getVariant().getSize() != null) {
+      variantInfo.put("sizeName", cartItem.getVariant().getSize().getName());
+    }
+    if (cartItem.getVariant().getColor() != null) {
+      variantInfo.put("colorName", cartItem.getVariant().getColor().getName());
+      variantInfo.put("colorHex", cartItem.getVariant().getColor().getHexColor());
+    }
+    variantInfo.put("productCode", cartItem.getVariant().getProduct().getCode());
+    variantInfo.put("productId", cartItem.getVariant().getProduct().getId());
+    variantInfo.put("variantId", cartItem.getVariant().getId());
+    
+    // Thêm thông tin product để đảm bảo hiển thị được ngay cả khi product bị xóa
+    variantInfo.put("productName", cartItem.getVariant().getProduct().getName());
+    variantInfo.put("productSlug", cartItem.getVariant().getProduct().getSlug());
+    variantInfo.put("productPrice", cartItem.getVariant().getProduct().getPrice());
+    variantInfo.put("productSalePrice", cartItem.getVariant().getProduct().getSalePrice());
+    variantInfo.put("productImages", cartItem.getVariant().getProduct().getImageUrls());
+    
+    orderItem.setVariantInfo(variantInfo);
+    orderItem.setProductName(cartItem.getVariant().getProduct().getName());
+
+    return orderItem;
   }
 }

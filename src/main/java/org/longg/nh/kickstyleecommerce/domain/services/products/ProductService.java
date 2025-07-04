@@ -39,6 +39,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -671,5 +672,80 @@ public class ProductService
             .isDeleted(product.getIsDeleted())
             .variants(productVariantRepository.findByProductId(product.getId()))
             .build();
+  }
+
+  /**
+   * Tìm sản phẩm bằng ID kể cả khi đã soft-delete, dành riêng cho Orders
+   * @param productId ID của sản phẩm
+   * @return Product entity bao gồm cả sản phẩm đã soft-delete
+   */
+  public Product findProductForOrderById(Long productId) {
+    return productRepository.findProductByIdIncludingDeleted(productId)
+        .orElseThrow(() -> new ResponseException(
+            HttpStatus.NOT_FOUND, 
+            "Product không tồn tại với ID: " + productId + " (kể cả đã xóa)"));
+  }
+
+  /**
+   * Tìm sản phẩm bằng ID kể cả khi đã soft-delete, dành riêng cho Orders
+   * Trả về Optional nếu không muốn throw exception
+   * @param productId ID của sản phẩm
+   * @return Optional<Product> entity bao gồm cả sản phẩm đã soft-delete
+   */
+  public Optional<Product> findProductForOrderByIdOptional(Long productId) {
+    return productRepository.findProductByIdIncludingDeleted(productId);
+  }
+
+  /**
+   * Lấy danh sách variants của một product, bao gồm cả các variants của sản phẩm đã soft-delete
+   * Dùng riêng cho Orders để đảm bảo orders vẫn hiển thị được đầy đủ thông tin sản phẩm
+   * 
+   * @param productId ID của sản phẩm
+   * @return Danh sách variants của sản phẩm
+   */
+  public List<ProductVariant> findProductVariantsForOrder(Long productId) {
+    try {
+      // Sử dụng findByProductIdIncludingDeleted để lấy cả variants đã bị soft-delete
+      return productVariantRepository.findByProductIdIncludingDeleted(productId);
+    } catch (Exception e) {
+      log.error("Error retrieving product variants for order: {}", e.getMessage());
+    }
+    return new ArrayList<>();
+  }
+  
+  /**
+   * Lấy ProductResponse từ product ID kể cả khi đã soft-delete, dành riêng cho Orders
+   * Đảm bảo đầy đủ thông tin bao gồm cả variants
+   * 
+   * @param productId ID của sản phẩm
+   * @return ProductResponse bao gồm cả sản phẩm đã soft-delete và variants
+   */
+  public ProductResponse findProductResponseForOrderById(Long productId) {
+    Product product = findProductForOrderById(productId);
+    
+    // Chuẩn bị response với toàn bộ thông tin
+    ProductResponse response = ProductResponse.builder()
+        .id(product.getId())
+        .name(product.getName())
+        .slug(product.getSlug())
+        .category(product.getCategory())
+        .team(product.getTeam())
+        .material(product.getMaterial())
+        .imageUrls(product.getImageUrls())
+        .season(product.getSeason())
+        .jerseyType(product.getJerseyType())
+        .isFeatured(product.getIsFeatured())
+        .code(product.getCode())
+        .description(product.getDescription())
+        .price(product.getPrice())
+        .status(product.getStatus())
+        .salePrice(product.getSalePrice())
+        .createdAt(product.getCreatedAt())
+        .updatedAt(product.getUpdatedAt())
+        .isDeleted(product.getIsDeleted())
+        .variants(findProductVariantsForOrder(product.getId()))
+        .build();
+    
+    return response;
   }
 }

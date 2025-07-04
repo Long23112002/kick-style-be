@@ -2,6 +2,9 @@ package org.longg.nh.kickstyleecommerce.app.api;
 
 import com.eps.shared.interfaces.api.IBaseApi;
 import com.eps.shared.interfaces.services.IBaseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.ProductRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.ProductResponse;
@@ -29,5 +32,15 @@ public class ProductController
   @GetMapping("/detail/{id}")
   public ProductResponse getProductById(@PathVariable Long id) {
     return productService.findById(id);
+  }
+  
+  @GetMapping("/orders/{id}")
+  @Operation(summary = "Lấy thông tin sản phẩm cho đơn hàng")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Lấy thông tin sản phẩm thành công (kể cả khi sản phẩm đã bị xóa)"),
+      @ApiResponse(responseCode = "404", description = "Không tìm thấy sản phẩm (cả khi đã xóa hoặc chưa từng tồn tại)")
+  })
+  public ProductResponse getProductForOrderById(@PathVariable Long id) {
+    return productService.findProductResponseForOrderById(id);
   }
 }

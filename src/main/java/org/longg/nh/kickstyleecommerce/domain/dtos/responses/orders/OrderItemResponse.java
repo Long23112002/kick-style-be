@@ -5,6 +5,7 @@ import org.longg.nh.kickstyleecommerce.domain.entities.Product;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -22,4 +23,10 @@ public class OrderItemResponse {
   private BigDecimal unitPrice;
   private BigDecimal totalPrice;
   private Timestamp createdAt;
+  private List<String> productImages;
+  private String productSlug;
+  
+  // Only the required product fields
+  private BigDecimal productPrice;
+  private BigDecimal productSalePrice;
 } 
