@@ -14,15 +14,15 @@ import java.util.Optional;
 @Repository
 public interface CartItemRepository extends IBaseRepository<CartItem, Long> {
 
-    @Query("SELECT ci FROM CartItem ci WHERE ci.cart.id = :cartId AND ci.variant.id = :variantId")
+    @Query("SELECT ci FROM CartItem ci WHERE ci.cartId = :cartId AND ci.variant.id = :variantId")
     Optional<CartItem> findByCartIdAndVariantId(@Param("cartId") Long cartId, @Param("variantId") Long variantId);
 
-    @Query("SELECT ci FROM CartItem ci WHERE ci.cart.id = :cartId")
+    @Query("SELECT ci FROM CartItem ci WHERE ci.cartId = :cartId")
     List<CartItem> findByCartId(@Param("cartId") Long cartId);
 
     @Modifying(clearAutomatically = true)
     @Transactional
-    @Query("DELETE FROM CartItem ci WHERE ci.cart.id = :cartId AND ci.variant.id IN :variantIds")
+    @Query("DELETE FROM CartItem ci WHERE ci.cartId = :cartId AND ci.variant.id IN :variantIds")
     void deleteByCartIdAndVariantIdIn(@Param("cartId") Long cartId, @Param("variantIds") List<Long> variantIds);
     
     @Modifying(clearAutomatically = true)
