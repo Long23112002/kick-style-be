@@ -11,6 +11,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.ProductRequest;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.ProductVariantRequest;
@@ -18,14 +19,17 @@ import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.ProductRes
 import org.longg.nh.kickstyleecommerce.domain.entities.*;
 import org.longg.nh.kickstyleecommerce.domain.entities.enums.Status;
 import org.longg.nh.kickstyleecommerce.domain.persistence.ProductPersistence;
+import org.longg.nh.kickstyleecommerce.domain.repositories.CartItemRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.ProductRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.ProductVariantRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.SizesRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.ColorsRepository;
+import org.longg.nh.kickstyleecommerce.domain.services.cart.CartItemService;
 import org.longg.nh.kickstyleecommerce.domain.utils.SlugUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,6 +42,7 @@ import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductService
     implements IBaseService<Product, Long, ProductResponse, ProductRequest, ProductResponse> {
 
@@ -49,10 +54,17 @@ public class ProductService
   private final ProductVariantRepository productVariantRepository;
   private final SizesRepository sizesRepository;
   private final ColorsRepository colorsRepository;
+  private final CartItemRepository cartItemRepository;
 
   @Override
   public IBasePersistence<Product, Long> getPersistence() {
     return productPersistence;
+  }
+
+  @Override
+  public void validateDelete(HeaderContext context, Long aLong, Product entity) {
+    cartItemRepository.deleteAllByProductId(aLong);
+    IBaseService.super.validateDelete(context, aLong, entity);
   }
 
   /** Validate tên sản phẩm không trùng lặp */
@@ -73,7 +85,6 @@ public class ProductService
 
   @Override
   public void postCreateHandler(HeaderContext context, Product entity, ProductRequest request) {
-
     IBaseService.super.postCreateHandler(context, entity, request);
   }
 
@@ -419,7 +430,22 @@ public class ProductService
             .collect(Collectors.toList());
 
     if (!variantsToDelete.isEmpty()) {
+      log.info("Deleting {} variants that are no longer in the request", variantsToDelete.size());
+      
+      // Xóa cart items chứa các variant sẽ bị xóa
+      for (ProductVariant variant : variantsToDelete) {
+        try {
+          log.info("Removing variant ID {} from all shopping carts", variant.getId());
+          cartItemRepository.deleteAllByVariantId(variant.getId());
+          log.info("Successfully removed variant ID {} from all shopping carts", variant.getId());
+        } catch (Exception e) {
+          log.error("Error removing variant ID {} from shopping carts: {}", variant.getId(), e.getMessage(), e);
+          // Continue with deletion even if cart item deletion fails
+        }
+      }
+      
       productVariantRepository.deleteAll(variantsToDelete);
+      log.info("Successfully deleted {} variants", variantsToDelete.size());
     }
 
     // Lưu tất cả variants (cập nhật + mới)
@@ -620,6 +646,7 @@ public class ProductService
     
     return result;
   }
+
 
   private BiFunction<HeaderContext, Product, ProductResponse> mappingResponseHandler() {
     return (context, product) ->

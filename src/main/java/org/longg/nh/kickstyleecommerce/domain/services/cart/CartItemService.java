@@ -2,6 +2,7 @@ package org.longg.nh.kickstyleecommerce.domain.services.cart;
 
 import com.eps.shared.models.exceptions.ResponseException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.longg.nh.kickstyleecommerce.domain.dtos.requests.carts.CartItemRequest;
 import org.longg.nh.kickstyleecommerce.domain.entities.Cart;
 import org.longg.nh.kickstyleecommerce.domain.entities.CartItem;
@@ -11,11 +12,13 @@ import org.longg.nh.kickstyleecommerce.domain.repositories.CartRepository;
 import org.longg.nh.kickstyleecommerce.domain.repositories.ProductVariantRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class CartItemService {
 
   private final CartItemRepository cartItemRepository;
@@ -123,5 +126,25 @@ public class CartItemService {
             () ->
                 new ResponseException(
                     HttpStatus.BAD_REQUEST, "Product variant not found with id: " + id));
+  }
+
+  /**
+   * Xóa tất cả các CartItem có chứa một variant cụ thể khỏi tất cả giỏ hàng
+   */
+  @Transactional
+  public void deleteAllByVariantId(Long variantId) {
+    log.info("Deleting all cart items with variant ID: {}", variantId);
+    cartItemRepository.deleteAllByVariantId(variantId);
+    log.info("Successfully deleted all cart items with variant ID: {}", variantId);
+  }
+
+  /**
+   * Xóa tất cả các CartItem có chứa sản phẩm cụ thể khỏi tất cả giỏ hàng
+   */
+  @Transactional
+  public void deleteAllByProductId(Long productId) {
+    log.info("Deleting all cart items with product ID: {}", productId);
+    cartItemRepository.deleteAllByProductId(productId);
+    log.info("Successfully deleted all cart items with product ID: {}", productId);
   }
 }
