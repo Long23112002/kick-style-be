@@ -30,7 +30,6 @@ public class CategoryController
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<CategoryResponse> create(
       HeaderContext context, Map<String, Object> headers, CategoryRequest request) {
     System.out.println("CategoryController.create called with request: " + request);
@@ -38,14 +37,12 @@ public class CategoryController
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<CategoryResponse> update(
       HeaderContext context, Map<String, Object> headers, Long aLong, CategoryRequest request) {
     return IBaseApi.super.update(context, headers, aLong, request);
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<?> delete(HeaderContext context, Map<String, Object> headers, Long aLong) {
     return IBaseApi.super.delete(context, headers, aLong);
   }

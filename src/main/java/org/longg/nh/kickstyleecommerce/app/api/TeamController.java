@@ -28,21 +28,18 @@ public class TeamController implements IBaseApi<Team, Long, TeamResponse, TeamRe
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<TeamResponse> create(
       HeaderContext context, Map<String, Object> headers, TeamRequest request) {
     return IBaseApi.super.create(context, headers, request);
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<TeamResponse> update(
       HeaderContext context, Map<String, Object> headers, Long aLong, TeamRequest request) {
     return IBaseApi.super.update(context, headers, aLong, request);
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<?> delete(HeaderContext context, Map<String, Object> headers, Long aLong) {
     return IBaseApi.super.delete(context, headers, aLong);
   }
