@@ -40,7 +40,7 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
            "SUM(oi.quantity) as totalSold, " +
            "SUM(oi.quantity * oi.unitPrice) as totalRevenue " +
            "FROM OrderItem oi JOIN oi.order o " +
-           "WHERE o.paymentStatus = 'PAID' AND DATE(oi.createdAt) = DATE(:date) " +
+           "WHERE o.status = 'DELIVERED' AND DATE(oi.createdAt) = DATE(:date) " +
            "GROUP BY oi.variant.id, oi.productName " +
            "ORDER BY totalSold DESC")
     List<Object[]> getTopSellingProductsByDate(@Param("date") Timestamp date);
@@ -50,7 +50,7 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
            "SUM(oi.quantity) as totalSold, " +
            "SUM(oi.quantity * oi.unitPrice) as totalRevenue " +
            "FROM OrderItem oi JOIN oi.order o " +
-           "WHERE o.paymentStatus = 'PAID' AND YEAR(oi.createdAt) = :year AND MONTH(oi.createdAt) = :month " +
+           "WHERE o.status = 'DELIVERED' AND YEAR(oi.createdAt) = :year AND MONTH(oi.createdAt) = :month " +
            "GROUP BY oi.variant.id, oi.productName " +
            "ORDER BY totalSold DESC")
     List<Object[]> getTopSellingProductsByMonth(@Param("year") int year, @Param("month") int month);
@@ -60,24 +60,24 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
            "SUM(oi.quantity) as totalSold, " +
            "SUM(oi.quantity * oi.unitPrice) as totalRevenue " +
            "FROM OrderItem oi JOIN oi.order o " +
-           "WHERE o.paymentStatus = 'PAID' AND YEAR(oi.createdAt) = :year " +
+           "WHERE o.status = 'DELIVERED' AND YEAR(oi.createdAt) = :year " +
            "GROUP BY oi.variant.id, oi.productName " +
            "ORDER BY totalSold DESC")
     List<Object[]> getTopSellingProductsByYear(@Param("year") int year);
     
     // Thống kê tổng số lượng sản phẩm đã bán theo ngày
     @Query("SELECT COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi JOIN oi.order o " +
-           "WHERE o.paymentStatus = 'PAID' AND DATE(oi.createdAt) = DATE(:date)")
+           "WHERE o.status = 'DELIVERED' AND DATE(oi.createdAt) = DATE(:date)")
     Long getTotalProductsSoldByDate(@Param("date") Timestamp date);
     
     // Thống kê tổng số lượng sản phẩm đã bán theo tháng
     @Query("SELECT COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi JOIN oi.order o " +
-           "WHERE o.paymentStatus = 'PAID' AND YEAR(oi.createdAt) = :year AND MONTH(oi.createdAt) = :month")
+           "WHERE o.status = 'DELIVERED' AND YEAR(oi.createdAt) = :year AND MONTH(oi.createdAt) = :month")
     Long getTotalProductsSoldByMonth(@Param("year") int year, @Param("month") int month);
     
     // Thống kê tổng số lượng sản phẩm đã bán theo năm
     @Query("SELECT COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi JOIN oi.order o " +
-           "WHERE o.paymentStatus = 'PAID' AND YEAR(oi.createdAt) = :year")
+           "WHERE o.status = 'DELIVERED' AND YEAR(oi.createdAt) = :year")
     Long getTotalProductsSoldByYear(@Param("year") int year);
     
     // Thống kê doanh thu theo sản phẩm trong khoảng thời gian

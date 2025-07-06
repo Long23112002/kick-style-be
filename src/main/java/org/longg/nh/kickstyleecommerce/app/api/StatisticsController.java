@@ -13,9 +13,12 @@ import org.longg.nh.kickstyleecommerce.domain.dtos.responses.statistics.RevenueS
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.users.UserStatResponse;
 import org.longg.nh.kickstyleecommerce.domain.services.statistics.StatisticsService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -64,17 +67,29 @@ public class StatisticsController {
     return ResponseEntity.ok(response);
   }
 
-  @Operation(summary = "Top sản phẩm bán chạy theo ngày", description = "Lấy danh sách sản phẩm bán chạy nhất trong một ngày")
-  @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "Lấy danh sách sản phẩm bán chạy thành công")
-  })
   @GetMapping("/products/top-selling/daily")
   public ResponseEntity<List<ProductSalesResponse>> getTopSellingProductsDaily(
-      @RequestParam @Parameter(description = "Ngày cần thống kê (yyyy-MM-dd)") LocalDate date,
-      @RequestParam(defaultValue = "10") @Parameter(description = "Số lượng sản phẩm cần lấy") int limit) {
-    List<ProductSalesResponse> responses = statisticsService.getTopSellingProductsByDate(date, limit);
-    return ResponseEntity.ok(responses);
+          @RequestParam(required = false) LocalDate date,
+          @RequestParam(required = false) Integer year,
+          @RequestParam(required = false) Integer month,
+          @RequestParam(required = false) Integer day,
+          @RequestParam(defaultValue = "10") int limit) {
+
+    if (date == null && year != null && month != null && day != null) {
+      try {
+        date = LocalDate.of(year, month, day);
+      } catch (DateTimeException e) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày không hợp lệ");
+      }
+    }
+
+    if (date == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'date' hoặc 'year/month/day'");
+    }
+
+    return ResponseEntity.ok(statisticsService.getTopSellingProductsByDate(date, limit));
   }
+
 
   @Operation(summary = "Top sản phẩm bán chạy theo tháng", description = "Lấy danh sách sản phẩm bán chạy nhất trong một tháng")
   @ApiResponses(value = {

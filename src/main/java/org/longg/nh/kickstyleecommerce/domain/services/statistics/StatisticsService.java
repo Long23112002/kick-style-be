@@ -68,7 +68,7 @@ public class StatisticsService {
   // Product Sales Statistics
   public List<ProductSalesResponse> getTopSellingProductsByDate(LocalDate date, int limit) {
     Timestamp timestamp = Timestamp.valueOf(date.atStartOfDay());
-    return orderItemRepository.getTopSellingProductsByDate(timestamp)
+    return orderItemRepository.getTopSellingProductsByDate(timestamp )
         .stream()
         .map(result -> ProductSalesResponse.builder()
             .productId((Long) result[0])
