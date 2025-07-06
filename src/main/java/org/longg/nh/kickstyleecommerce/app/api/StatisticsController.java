@@ -37,7 +37,22 @@ public class StatisticsController {
   })
   @GetMapping("/revenue/daily")
   public ResponseEntity<RevenueStatResponse> getDailyRevenue(
-      @RequestParam @Parameter(description = "Ngày cần thống kê (yyyy-MM-dd)") LocalDate date) {
+          @RequestParam(required = false) LocalDate date,
+          @RequestParam(required = false) Integer year,
+          @RequestParam(required = false) Integer month,
+          @RequestParam(required = false) Integer day,
+          @RequestParam(defaultValue = "10") int limit) {
+    if (date == null && year != null && month != null && day != null) {
+      try {
+        date = LocalDate.of(year, month, day);
+      } catch (DateTimeException e) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày không hợp lệ");
+      }
+    }
+
+    if (date == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'date' hoặc 'year/month/day'");
+    }
     RevenueStatResponse response = statisticsService.getTotalRevenueByDate(date);
     return ResponseEntity.ok(response);
   }
