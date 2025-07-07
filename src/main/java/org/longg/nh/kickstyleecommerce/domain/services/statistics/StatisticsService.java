@@ -29,9 +29,10 @@ public class StatisticsService {
 
   // Revenue Statistics
   public RevenueStatResponse getTotalRevenueByDate(LocalDate date) {
+    List<OrderStatus> orderStatuses = List.of(OrderStatus.DELIVERED, OrderStatus.RECEIVED);
     Timestamp timestamp = Timestamp.valueOf(date.atStartOfDay());
-    BigDecimal revenue = orderRepository.getTotalRevenueByDate(OrderStatus.DELIVERED, timestamp);
-    Long orderCount = orderRepository.getTotalOrdersByDate(OrderStatus.DELIVERED, timestamp);
+    BigDecimal revenue = orderRepository.getTotalRevenueByDate(orderStatuses, timestamp);
+    Long orderCount = orderRepository.getTotalOrdersByDate(orderStatuses, timestamp);
     
     return RevenueStatResponse.builder()
         .period(date.toString())
@@ -42,8 +43,9 @@ public class StatisticsService {
   }
 
   public RevenueStatResponse getTotalRevenueByMonth(int year, int month) {
-    BigDecimal revenue = orderRepository.getTotalRevenueByMonth(OrderStatus.DELIVERED, year, month);
-    Long orderCount = orderRepository.getTotalOrdersByMonth(OrderStatus.DELIVERED, year, month);
+    List<OrderStatus> orderStatuses = List.of(OrderStatus.DELIVERED, OrderStatus.RECEIVED);
+    BigDecimal revenue = orderRepository.getTotalRevenueByMonth(orderStatuses, year, month);
+    Long orderCount = orderRepository.getTotalOrdersByMonth(orderStatuses, year, month);
     
     return RevenueStatResponse.builder()
         .period(year + "-" + String.format("%02d", month))
@@ -54,8 +56,9 @@ public class StatisticsService {
   }
 
   public RevenueStatResponse getTotalRevenueByYear(int year) {
-    BigDecimal revenue = orderRepository.getTotalRevenueByYear(OrderStatus.DELIVERED, year);
-    Long orderCount = orderRepository.getTotalOrdersByYear(OrderStatus.DELIVERED, year);
+    List<OrderStatus> orderStatuses = List.of(OrderStatus.DELIVERED, OrderStatus.RECEIVED);
+    BigDecimal revenue = orderRepository.getTotalRevenueByYear(orderStatuses, year);
+    Long orderCount = orderRepository.getTotalOrdersByYear(orderStatuses, year);
     
     return RevenueStatResponse.builder()
         .period(String.valueOf(year))

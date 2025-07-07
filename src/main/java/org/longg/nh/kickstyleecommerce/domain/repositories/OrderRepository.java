@@ -37,79 +37,65 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
   @Query(value = "SELECT last_value + 1 FROM orders.orders_id_seq", nativeQuery = true)
   Long getNextSequence();
 
-  // Thống kê doanh thu theo ngày
+  // Doanh thu theo ngày
   @Query(
-      "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
-          + "WHERE o.status = :orderStatus "
-          + "AND DATE(o.updatedAt) = DATE(:date)")
+          "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND DATE(o.updatedAt) = DATE(:date)")
   BigDecimal getTotalRevenueByDate(
-      @Param("orderStatus") OrderStatus orderStatus, @Param("date") Timestamp date);
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("date") Timestamp date);
 
-  // Thống kê doanh thu theo tháng
+  // Doanh thu theo tháng
   @Query(
-      "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
-          + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.updatedAt) = :year AND MONTH(o.createdAt) = :month")
+          "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND YEAR(o.updatedAt) = :year AND MONTH(o.createdAt) = :month")
   BigDecimal getTotalRevenueByMonth(
-          @Param("orderStatus") OrderStatus orderStatus,
-      @Param("year") int year,
-      @Param("month") int month);
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("year") int year,
+          @Param("month") int month);
 
-  // Thống kê doanh thu theo năm
+  // Doanh thu theo năm
   @Query(
-      "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
-          + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.updatedAt) = :year")
+          "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND YEAR(o.updatedAt) = :year")
   BigDecimal getTotalRevenueByYear(
-          @Param("orderStatus") OrderStatus orderStatus, @Param("year") int year);
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("year") int year);
 
-  // Thống kê số đơn hàng theo ngày với điều kiện payment status
+  // Số đơn hàng theo ngày
   @Query(
-      "SELECT COUNT(o) FROM Order o "
-          + "WHERE o.status = :orderStatus "
-          + "AND DATE(o.updatedAt) = DATE(:date)")
+          "SELECT COUNT(o) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND DATE(o.updatedAt) = DATE(:date)")
   Long getTotalOrdersByDate(
-          @Param("orderStatus") OrderStatus orderStatus, @Param("date") Timestamp date);
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("date") Timestamp date);
 
-  // Thống kê số đơn hàng theo ngày
-  @Query("SELECT COUNT(o) FROM Order o " + "WHERE DATE(o.createdAt) = DATE(:date)")
+  // Số đơn hàng theo ngày (không theo status)
+  @Query("SELECT COUNT(o) FROM Order o WHERE DATE(o.createdAt) = DATE(:date)")
   Long getOrderCountByDate(@Param("date") Timestamp date);
 
-  // Thống kê số đơn hàng theo tháng với điều kiện payment status
+  // Số đơn hàng theo tháng
   @Query(
-      "SELECT COUNT(o) FROM Order o "
-          + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.updatedAt) = :year AND MONTH(o.updatedAt) = :month")
+          "SELECT COUNT(o) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND YEAR(o.updatedAt) = :year AND MONTH(o.updatedAt) = :month")
   Long getTotalOrdersByMonth(
-          @Param("orderStatus") OrderStatus orderStatus,
-      @Param("year") int year,
-      @Param("month") int month);
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("year") int year,
+          @Param("month") int month);
 
-  // Thống kê số đơn hàng theo tháng
+  // Số đơn hàng theo năm
   @Query(
-      "SELECT COUNT(o) FROM Order o "
-          + "WHERE YEAR(o.updatedAt) = :year AND MONTH(o.updatedAt) = :month")
-  Long getOrderCountByMonth(@Param("year") int year, @Param("month") int month);
-
-  // Thống kê số đơn hàng theo năm với điều kiện payment status
-  @Query(
-      "SELECT COUNT(o) FROM Order o "
-          + "WHERE o.status = :orderStatus "
-          + "AND YEAR(o.updatedAt) = :year")
+          "SELECT COUNT(o) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND YEAR(o.updatedAt) = :year")
   Long getTotalOrdersByYear(
-          @Param("orderStatus") OrderStatus orderStatus, @Param("year") int year);
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("year") int year);
 
-  // Thống kê số đơn hàng theo năm
-  @Query("SELECT COUNT(o) FROM Order o " + "WHERE YEAR(o.updatedAt) = :year")
-  Long getOrderCountByYear(@Param("year") int year);
 
-  // Doanh thu trong khoảng thời gian
-  @Query(
-      "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
-          + "WHERE o.status = :orderStatus "
-          + "AND o.updatedAt BETWEEN :startDate AND :endDate")
-  BigDecimal getTotalRevenueBetweenDates(
-          @Param("orderStatus") OrderStatus orderStatus,
-      @Param("startDate") Timestamp startDate,
-      @Param("endDate") Timestamp endDate);
 }
