@@ -7,8 +7,7 @@ CREATE TABLE orders.orders
     id                BIGSERIAL PRIMARY KEY,
     user_id           BIGINT        NOT NULL,
     code              VARCHAR(50)   NOT NULL UNIQUE,
-    status            VARCHAR(30)   NOT NULL DEFAULT 'PENDING' 
-                      CHECK (status IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'REFUNDED')),
+    status            VARCHAR(30)   NOT NULL DEFAULT 'PENDING',
     customer_name     VARCHAR(255)  NOT NULL,
     customer_email    VARCHAR(255)  NOT NULL,
     customer_phone    VARCHAR(20)   NOT NULL,
