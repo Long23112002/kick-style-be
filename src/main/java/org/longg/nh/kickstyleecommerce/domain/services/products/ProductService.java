@@ -56,6 +56,7 @@ public class ProductService
   private final SizesRepository sizesRepository;
   private final ColorsRepository colorsRepository;
   private final CartItemRepository cartItemRepository;
+  private final CartItemService cartItemService;
 
   @Override
   public IBasePersistence<Product, Long> getPersistence() {
@@ -371,6 +372,9 @@ public class ProductService
 
     // Danh sách variants sẽ được lưu
     List<ProductVariant> variantsToSave = new ArrayList<>();
+    
+    // Danh sách variants có thay đổi stock quantity
+    List<ProductVariant> variantsWithChangedStock = new ArrayList<>();
 
     // Danh sách size_color combination trong request
     Set<String> requestSizeColorKeys = new HashSet<>();
@@ -380,6 +384,7 @@ public class ProductService
       requestSizeColorKeys.add(sizeColorKey);
 
       ProductVariant variant = existingVariantMap.get(sizeColorKey);
+      Integer originalStockQuantity = variant != null ? variant.getStockQuantity() : null;
 
       if (variant != null) {
         // Cập nhật variant có sẵn
@@ -393,6 +398,11 @@ public class ProductService
 
         // Tự động cập nhật status dựa trên stockQuantity
         variant.setStatus(determineVariantStatus(variantReq.getStockQuantity()));
+        
+        // Nếu stock quantity thay đổi, cập nhật các cart items
+        if (!variantReq.getStockQuantity().equals(originalStockQuantity)) {
+          variantsWithChangedStock.add(variant);
+        }
       } else {
         // Tạo variant mới
         variant = new ProductVariant();
@@ -451,6 +461,11 @@ public class ProductService
 
     // Lưu tất cả variants (cập nhật + mới)
     productVariantRepository.saveAll(variantsToSave);
+    
+    // Cập nhật cart items cho các variants có thay đổi stock quantity
+    for (ProductVariant variant : variantsWithChangedStock) {
+      cartItemService.updateCartItemsForVariantStockChange(variant.getId(), variant.getStockQuantity());
+    }
   }
 
   public ProductResponse findById(Long id){
@@ -504,6 +519,9 @@ public class ProductService
     // Cập nhật status của product
     updateProductStatus(variant.getProduct());
     productRepository.save(variant.getProduct());
+    
+    // Cập nhật các giỏ hàng chứa variant này
+    cartItemService.updateCartItemsForVariantStockChange(variantId, newStockQuantity);
   }
 
   @Override

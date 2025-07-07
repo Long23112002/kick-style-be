@@ -19,6 +19,9 @@ public interface CartItemRepository extends IBaseRepository<CartItem, Long> {
 
     @Query("SELECT ci FROM CartItem ci WHERE ci.cartId = :cartId")
     List<CartItem> findByCartId(@Param("cartId") Long cartId);
+    
+    @Query("SELECT ci FROM CartItem ci WHERE ci.variant.id = :variantId")
+    List<CartItem> findByVariantId(@Param("variantId") Long variantId);
 
     @Modifying(clearAutomatically = true)
     @Transactional

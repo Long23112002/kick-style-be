@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -126,6 +127,45 @@ public class CartItemService {
             () ->
                 new ResponseException(
                     HttpStatus.BAD_REQUEST, "Product variant not found with id: " + id));
+  }
+
+  /**
+   * Cập nhật số lượng sản phẩm trong các giỏ hàng khi số lượng tồn kho của variant thay đổi
+   * @param variantId ID của variant
+   * @param newStockQuantity Số lượng tồn kho mới
+   */
+  @Transactional
+  public void updateCartItemsForVariantStockChange(Long variantId, Integer newStockQuantity) {
+    log.info("Updating cart items for variant ID {} with new stock quantity {}", variantId, newStockQuantity);
+    
+    if (newStockQuantity <= 0) {
+      // Nếu hết hàng, xóa variant khỏi tất cả giỏ hàng
+      deleteAllByVariantId(variantId);
+      log.info("Variant ID {} out of stock, removed from all carts", variantId);
+      return;
+    }
+    
+    // Lấy tất cả cart items chứa variant này
+    List<CartItem> cartItems = cartItemRepository.findByVariantId(variantId);
+    
+    if (cartItems.isEmpty()) {
+      log.info("No cart items found containing variant ID {}", variantId);
+      return;
+    }
+    
+    log.info("Found {} cart items containing variant ID {}", cartItems.size(), variantId);
+    
+    // Cập nhật số lượng trong cart items nếu vượt quá số lượng tồn kho mới
+    for (CartItem cartItem : cartItems) {
+      if (cartItem.getQuantity() > newStockQuantity) {
+        log.info("Adjusting cart item ID {} quantity from {} to {}", 
+                 cartItem.getId(), cartItem.getQuantity(), newStockQuantity);
+        cartItem.setQuantity(newStockQuantity);
+        cartItemRepository.save(cartItem);
+      }
+    }
+    
+    log.info("Successfully updated cart items for variant ID {}", variantId);
   }
 
   /**
