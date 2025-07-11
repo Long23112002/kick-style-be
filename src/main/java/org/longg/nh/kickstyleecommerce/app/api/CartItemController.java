@@ -39,7 +39,6 @@ public class CartItemController {
       @ApiResponse(responseCode = "200", description = "Xóa thành công"),
       @ApiResponse(responseCode = "400", description = "Lỗi khi xóa")
   })
-  @CheckRole({"ADMIN"})
   public ResponseEntity<Void> deleteAllByProductId(@PathVariable Long productId) {
     cartItemService.deleteAllByProductId(productId);
     return ResponseEntity.ok().build();
@@ -51,7 +50,6 @@ public class CartItemController {
       @ApiResponse(responseCode = "200", description = "Xóa thành công"),
       @ApiResponse(responseCode = "400", description = "Lỗi khi xóa")
   })
-  @CheckRole({"ADMIN"})
   public ResponseEntity<Void> deleteAllByVariantId(@PathVariable Long variantId) {
     cartItemService.deleteAllByVariantId(variantId);
     return ResponseEntity.ok().build();

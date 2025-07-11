@@ -30,21 +30,18 @@ public class MaterialController
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<MaterialResponse> create(
       HeaderContext context, Map<String, Object> headers, MaterialRequest request) {
     return IBaseApi.super.create(context, headers, request);
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<MaterialResponse> update(
       HeaderContext context, Map<String, Object> headers, Long aLong, MaterialRequest request) {
     return IBaseApi.super.update(context, headers, aLong, request);
   }
 
   @Override
-  @CheckRole({"ADMIN"})
   public ResponseEntity<?> delete(HeaderContext context, Map<String, Object> headers, Long aLong) {
     return IBaseApi.super.delete(context, headers, aLong);
   }
