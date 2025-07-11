@@ -119,9 +119,31 @@ public class ProductService
 
   /**
    * Tự động cập nhật status của variant dựa trên stockQuantity
+   * @deprecated Sử dụng {@link #determineVariantStatus(Integer, Boolean)} thay thế
    */
   private Status determineVariantStatus(Integer stockQuantity) {
-    return stockQuantity != null && stockQuantity <= 0 ? Status.OUT_OF_STOCK : Status.ACTIVE;
+    return determineVariantStatus(stockQuantity, true);
+  }
+
+  /**
+   * Tự động cập nhật status của variant dựa trên stockQuantity và isEnabled
+   * @param stockQuantity Số lượng tồn kho
+   * @param isEnabled Trạng thái bật/tắt của variant
+   * @return Status của variant
+   */
+  private Status determineVariantStatus(Integer stockQuantity, Boolean isEnabled) {
+    // Nếu variant bị tắt thì trạng thái là INACTIVE
+    if (isEnabled == null || !isEnabled) {
+      return Status.INACTIVE;
+    }
+    
+    // Nếu variant được bật nhưng hết hàng thì trạng thái là OUT_OF_STOCK
+    if (stockQuantity == null || stockQuantity <= 0) {
+      return Status.OUT_OF_STOCK;
+    }
+    
+    // Nếu variant được bật và còn hàng thì trạng thái là ACTIVE
+    return Status.ACTIVE;
   }
 
   /**
@@ -227,9 +249,12 @@ public class ProductService
                     priceAdjustment = BigDecimal.ZERO;
                   }
                   variant.setPriceAdjustment(priceAdjustment);
+                  
+                  // Cập nhật trạng thái bật/tắt
+                  variant.setIsEnabled(variantReq.getIsEnabled() != null ? variantReq.getIsEnabled() : true);
 
-                  // Tự động set status dựa trên stockQuantity
-                  variant.setStatus(determineVariantStatus(variantReq.getStockQuantity()));
+                  // Tự động set status dựa trên stockQuantity và isEnabled
+                  variant.setStatus(determineVariantStatus(variantReq.getStockQuantity(), variant.getIsEnabled()));
 
                   return variant;
                 })
@@ -395,9 +420,12 @@ public class ProductService
           priceAdjustment = BigDecimal.ZERO;
         }
         variant.setPriceAdjustment(priceAdjustment);
+        
+        // Cập nhật trạng thái bật/tắt
+        variant.setIsEnabled(variantReq.getIsEnabled() != null ? variantReq.getIsEnabled() : true);
 
-        // Tự động cập nhật status dựa trên stockQuantity
-        variant.setStatus(determineVariantStatus(variantReq.getStockQuantity()));
+        // Tự động cập nhật status dựa trên stockQuantity và isEnabled
+        variant.setStatus(determineVariantStatus(variantReq.getStockQuantity(), variant.getIsEnabled()));
         
         // Nếu stock quantity thay đổi, cập nhật các cart items
         if (!variantReq.getStockQuantity().equals(originalStockQuantity)) {
@@ -425,9 +453,12 @@ public class ProductService
           priceAdjustment = BigDecimal.ZERO;
         }
         variant.setPriceAdjustment(priceAdjustment);
+        
+        // Cập nhật trạng thái bật/tắt cho variant mới
+        variant.setIsEnabled(variantReq.getIsEnabled() != null ? variantReq.getIsEnabled() : true);
 
-        // Tự động set status dựa trên stockQuantity cho variant mới
-        variant.setStatus(determineVariantStatus(variantReq.getStockQuantity()));
+        // Tự động set status dựa trên stockQuantity và isEnabled cho variant mới
+        variant.setStatus(determineVariantStatus(variantReq.getStockQuantity(), variant.getIsEnabled()));
       }
 
       variantsToSave.add(variant);
@@ -489,10 +520,10 @@ public class ProductService
         .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, 
             "Product không tồn tại với ID: " + productId));
 
-    // Cập nhật status của tất cả variants dựa trên stockQuantity
+    // Cập nhật status của tất cả variants dựa trên stockQuantity và isEnabled
     List<ProductVariant> variants = productVariantRepository.findByProductId(productId);
     variants.forEach(variant -> {
-      variant.setStatus(determineVariantStatus(variant.getStockQuantity()));
+      variant.setStatus(determineVariantStatus(variant.getStockQuantity(), variant.getIsEnabled()));
     });
     
     if (!variants.isEmpty()) {
@@ -513,7 +544,7 @@ public class ProductService
             "Product variant không tồn tại với ID: " + variantId));
 
     variant.setStockQuantity(newStockQuantity);
-    variant.setStatus(determineVariantStatus(newStockQuantity));
+    variant.setStatus(determineVariantStatus(newStockQuantity, variant.getIsEnabled()));
     productVariantRepository.save(variant);
 
     // Cập nhật status của product
@@ -522,6 +553,43 @@ public class ProductService
     
     // Cập nhật các giỏ hàng chứa variant này
     cartItemService.updateCartItemsForVariantStockChange(variantId, newStockQuantity);
+  }
+
+  /**
+   * Bật/tắt variant sản phẩm
+   * @param variantId ID của variant cần cập nhật
+   * @param enabled Trạng thái mới (true: bật, false: tắt)
+   * @return ProductResponse chứa thông tin sản phẩm đã cập nhật
+   */
+  public ProductResponse toggleVariantStatus(Long variantId, Boolean enabled) {
+    ProductVariant variant = productVariantRepository.findById(variantId)
+        .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, 
+            "Product variant không tồn tại với ID: " + variantId));
+
+    // Cập nhật trạng thái bật/tắt
+    variant.setIsEnabled(enabled != null ? enabled : true);
+    
+    // Tự động cập nhật status dựa trên stockQuantity và isEnabled mới
+    variant.setStatus(determineVariantStatus(variant.getStockQuantity(), variant.getIsEnabled()));
+    productVariantRepository.save(variant);
+
+    // Cập nhật status của product dựa trên tất cả variants
+    updateProductStatus(variant.getProduct());
+    productRepository.save(variant.getProduct());
+    
+    // Nếu variant bị tắt, xóa khỏi tất cả giỏ hàng (vì không còn có thể mua)
+    if (!variant.getIsEnabled()) {
+      try {
+        log.info("Removing disabled variant ID {} from all shopping carts", variantId);
+        cartItemRepository.deleteAllByVariantId(variantId);
+        log.info("Successfully removed disabled variant ID {} from all shopping carts", variantId);
+      } catch (Exception e) {
+        log.error("Error removing disabled variant ID {} from shopping carts: {}", variantId, e.getMessage(), e);
+      }
+    }
+
+    // Trả về ProductResponse đã cập nhật
+    return mappingResponseHandler().apply(null, variant.getProduct());
   }
 
   @Override

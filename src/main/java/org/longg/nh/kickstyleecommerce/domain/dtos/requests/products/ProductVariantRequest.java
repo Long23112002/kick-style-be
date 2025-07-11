@@ -31,4 +31,6 @@ public class ProductVariantRequest {
 
   @NotNull(message = "ID màu sắc không được để trống")
   private Long colorId;
+
+  private Boolean isEnabled = true;
 }

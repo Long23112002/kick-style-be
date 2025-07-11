@@ -50,6 +50,9 @@ public class ProductVariant {
   @Column(name = "stock_quantity")
   private Integer stockQuantity;
 
+  @Column(name = "is_enabled", nullable = false)
+  private Boolean isEnabled = true;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private Timestamp createdAt;
