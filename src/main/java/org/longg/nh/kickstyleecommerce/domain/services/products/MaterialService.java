@@ -3,6 +3,7 @@ package org.longg.nh.kickstyleecommerce.domain.services.products;
 import com.eps.shared.interfaces.persistence.IBasePersistence;
 import com.eps.shared.interfaces.services.IBaseService;
 import com.eps.shared.models.HeaderContext;
+import com.eps.shared.models.exceptions.ResponseException;
 import com.eps.shared.utils.functions.PentaConsumer;
 import com.eps.shared.utils.functions.QuadConsumer;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,9 @@ import org.longg.nh.kickstyleecommerce.domain.dtos.requests.products.MaterialReq
 import org.longg.nh.kickstyleecommerce.domain.dtos.responses.products.MaterialResponse;
 import org.longg.nh.kickstyleecommerce.domain.entities.Material;
 import org.longg.nh.kickstyleecommerce.domain.persistence.MaterialPersistence;
+import org.longg.nh.kickstyleecommerce.domain.repositories.ProductRepository;
 import org.longg.nh.kickstyleecommerce.domain.utils.SlugUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.function.BiFunction;
@@ -74,6 +77,18 @@ public class MaterialService
             .createdAt(entity.getCreatedAt())
             .isDeleted(entity.getIsDeleted())
             .build();
+  }
+
+
+  private final ProductRepository productRepository;
+
+  @Override
+  public void delete(HeaderContext context, Long aLong) {
+    if (productRepository.existsByMaterialId(aLong)) {
+      throw new ResponseException(HttpStatus.BAD_REQUEST,
+              "Không thể xóa chất liệu này vì đang có sản phẩm sử dụng");
+    }
+    IBaseService.super.delete(context, aLong);
   }
 
   private TriConsumer<HeaderContext, Material, MaterialRequest> wrapMappingHandlerWithSlug(

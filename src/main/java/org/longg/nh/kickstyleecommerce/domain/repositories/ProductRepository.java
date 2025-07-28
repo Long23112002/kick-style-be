@@ -11,6 +11,9 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends IBaseRepository<Product, Long> {
+    boolean existsByCategoryId(Long categoryId);
+    boolean existsByTeamId(Long teamId);
+    boolean existsByMaterialId(Long materialId);
 
     @Query(value = "SELECT last_value + 1 FROM products.products_id_seq", nativeQuery = true)
     Long getNextSequence();

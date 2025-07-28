@@ -11,6 +11,8 @@ import java.util.List;
 
 @Repository
 public interface ProductVariantRepository extends IBaseRepository<ProductVariant, Long> {
+    boolean existsBySizeId(Long sizeId);
+    boolean existsByColorId(Long colorId);
 
     List<ProductVariant> findByProductId(Long id);
     
