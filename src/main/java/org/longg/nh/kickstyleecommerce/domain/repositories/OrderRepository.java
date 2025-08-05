@@ -97,5 +97,24 @@ public interface OrderRepository extends IBaseRepository<Order, Long> {
           @Param("orderStatuses") List<OrderStatus> orderStatuses,
           @Param("year") int year);
 
+  // Doanh thu theo khoảng thời gian
+  @Query(
+          "SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND o.updatedAt BETWEEN :startDate AND :endDate")
+  BigDecimal getTotalRevenueByDateRange(
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("startDate") Timestamp startDate,
+          @Param("endDate") Timestamp endDate);
+
+  // Số đơn hàng theo khoảng thời gian
+  @Query(
+          "SELECT COUNT(o) FROM Order o "
+                  + "WHERE o.status IN :orderStatuses "
+                  + "AND o.updatedAt BETWEEN :startDate AND :endDate")
+  Long getTotalOrdersByDateRange(
+          @Param("orderStatuses") List<OrderStatus> orderStatuses,
+          @Param("startDate") Timestamp startDate,
+          @Param("endDate") Timestamp endDate);
 
 }

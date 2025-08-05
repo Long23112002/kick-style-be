@@ -87,6 +87,19 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
            "WHERE o.paymentStatus = 'PAID' AND oi.createdAt BETWEEN :startDate AND :endDate " +
            "GROUP BY oi.variant.id, oi.productName " +
            "ORDER BY totalRevenue DESC")
-    List<Object[]> getProductRevenueStats(@Param("startDate") Timestamp startDate, 
+    List<Object[]> getProductRevenueStats(@Param("startDate") Timestamp startDate,
                                           @Param("endDate") Timestamp endDate);
-} 
+
+    // Thống kê sản phẩm bán chạy theo khoảng thời gian
+    @Query(value = "SELECT oi.variant_id as variantId, oi.product_name as productName, " +
+           "SUM(oi.quantity) as totalSold, " +
+           "SUM(oi.quantity * oi.unit_price) as totalRevenue " +
+           "FROM order_items oi JOIN orders o ON oi.order_id = o.id " +
+           "WHERE o.status = 'DELIVERED' AND oi.created_at BETWEEN :startDate AND :endDate " +
+           "GROUP BY oi.variant_id, oi.product_name " +
+           "ORDER BY totalSold DESC " +
+           "LIMIT :limit", nativeQuery = true)
+    List<Object[]> getTopSellingProductsByDateRange(@Param("startDate") Timestamp startDate,
+                                                     @Param("endDate") Timestamp endDate,
+                                                     @Param("limit") int limit);
+}

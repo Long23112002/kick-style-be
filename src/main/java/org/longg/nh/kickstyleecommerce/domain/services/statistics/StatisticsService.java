@@ -59,12 +59,29 @@ public class StatisticsService {
     List<OrderStatus> orderStatuses = List.of(OrderStatus.DELIVERED, OrderStatus.RECEIVED);
     BigDecimal revenue = orderRepository.getTotalRevenueByYear(orderStatuses, year);
     Long orderCount = orderRepository.getTotalOrdersByYear(orderStatuses, year);
-    
+
     return RevenueStatResponse.builder()
         .period(String.valueOf(year))
         .totalRevenue(revenue != null ? revenue : BigDecimal.ZERO)
         .totalOrders(orderCount != null ? orderCount : 0L)
         .periodType("YEAR")
+        .build();
+  }
+
+  // Revenue Statistics by Date Range
+  public RevenueStatResponse getTotalRevenueByDateRange(LocalDate startDate, LocalDate endDate) {
+    List<OrderStatus> orderStatuses = List.of(OrderStatus.DELIVERED, OrderStatus.RECEIVED);
+    Timestamp startTimestamp = Timestamp.valueOf(startDate.atStartOfDay());
+    Timestamp endTimestamp = Timestamp.valueOf(endDate.atTime(23, 59, 59));
+
+    BigDecimal revenue = orderRepository.getTotalRevenueByDateRange(orderStatuses, startTimestamp, endTimestamp);
+    Long orderCount = orderRepository.getTotalOrdersByDateRange(orderStatuses, startTimestamp, endTimestamp);
+
+    return RevenueStatResponse.builder()
+        .period(startDate.toString() + " to " + endDate.toString())
+        .totalRevenue(revenue != null ? revenue : BigDecimal.ZERO)
+        .totalOrders(orderCount != null ? orderCount : 0L)
+        .periodType("RANGE")
         .build();
   }
 
@@ -108,6 +125,24 @@ public class StatisticsService {
             .totalRevenue((BigDecimal) result[3])
             .period(String.valueOf(year))
             .periodType("YEAR")
+            .build())
+        .collect(Collectors.toList());
+  }
+
+  // Product Sales Statistics by Date Range
+  public List<ProductSalesResponse> getTopSellingProductsByDateRange(LocalDate startDate, LocalDate endDate, int limit) {
+    Timestamp startTimestamp = Timestamp.valueOf(startDate.atStartOfDay());
+    Timestamp endTimestamp = Timestamp.valueOf(endDate.atTime(23, 59, 59));
+
+    return orderItemRepository.getTopSellingProductsByDateRange(startTimestamp, endTimestamp, limit)
+        .stream()
+        .map(result -> ProductSalesResponse.builder()
+            .productId((Long) result[0])
+            .productName((String) result[1])
+            .totalQuantitySold(((Number) result[2]).longValue())
+            .totalRevenue((BigDecimal) result[3])
+            .period(startDate.toString() + " to " + endDate.toString())
+            .periodType("RANGE")
             .build())
         .collect(Collectors.toList());
   }

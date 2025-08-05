@@ -30,18 +30,31 @@ public class StatisticsController {
 
   private final StatisticsService statisticsService;
 
-  @Operation(summary = "Thống kê doanh thu theo ngày", description = "Lấy thông tin doanh thu và số đơn hàng trong một ngày cụ thể")
+  @Operation(summary = "Thống kê doanh thu theo ngày", description = "Lấy thông tin doanh thu và số đơn hàng trong một ngày cụ thể hoặc khoảng thời gian")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy thống kê doanh thu thành công",
                   content = @Content(schema = @Schema(implementation = RevenueStatResponse.class)))
   })
   @GetMapping("/revenue/daily")
   public ResponseEntity<RevenueStatResponse> getDailyRevenue(
-          @RequestParam(required = false) LocalDate date,
+          @RequestParam(required = false) @Parameter(description = "Ngày cụ thể (yyyy-MM-dd)") LocalDate date,
+          @RequestParam(required = false) @Parameter(description = "Ngày bắt đầu (yyyy-MM-dd)") LocalDate startDate,
+          @RequestParam(required = false) @Parameter(description = "Ngày kết thúc (yyyy-MM-dd)") LocalDate endDate,
           @RequestParam(required = false) Integer year,
           @RequestParam(required = false) Integer month,
           @RequestParam(required = false) Integer day,
           @RequestParam(defaultValue = "10") int limit) {
+
+    // Nếu có startDate và endDate, ưu tiên sử dụng khoảng thời gian
+    if (startDate != null && endDate != null) {
+      if (startDate.isAfter(endDate)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày bắt đầu không thể sau ngày kết thúc");
+      }
+      RevenueStatResponse response = statisticsService.getTotalRevenueByDateRange(startDate, endDate);
+      return ResponseEntity.ok(response);
+    }
+
+    // Logic cũ cho ngày cụ thể
     if (date == null && year != null && month != null && day != null) {
       try {
         date = LocalDate.of(year, month, day);
@@ -51,45 +64,94 @@ public class StatisticsController {
     }
 
     if (date == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'date' hoặc 'year/month/day'");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'date', 'year/month/day' hoặc 'startDate/endDate'");
     }
     RevenueStatResponse response = statisticsService.getTotalRevenueByDate(date);
     return ResponseEntity.ok(response);
   }
 
-  @Operation(summary = "Thống kê doanh thu theo tháng", description = "Lấy thông tin doanh thu và số đơn hàng trong một tháng cụ thể")
+  @Operation(summary = "Thống kê doanh thu theo tháng", description = "Lấy thông tin doanh thu và số đơn hàng trong một tháng cụ thể hoặc khoảng thời gian")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy thống kê doanh thu thành công",
                   content = @Content(schema = @Schema(implementation = RevenueStatResponse.class)))
   })
   @GetMapping("/revenue/monthly")
   public ResponseEntity<RevenueStatResponse> getMonthlyRevenue(
-      @RequestParam @Parameter(description = "Năm") int year,
-      @RequestParam @Parameter(description = "Tháng (1-12)") int month) {
+      @RequestParam(required = false) @Parameter(description = "Năm") Integer year,
+      @RequestParam(required = false) @Parameter(description = "Tháng (1-12)") Integer month,
+      @RequestParam(required = false) @Parameter(description = "Ngày bắt đầu (yyyy-MM-dd)") LocalDate startDate,
+      @RequestParam(required = false) @Parameter(description = "Ngày kết thúc (yyyy-MM-dd)") LocalDate endDate) {
+
+    // Nếu có startDate và endDate, ưu tiên sử dụng khoảng thời gian
+    if (startDate != null && endDate != null) {
+      if (startDate.isAfter(endDate)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày bắt đầu không thể sau ngày kết thúc");
+      }
+      RevenueStatResponse response = statisticsService.getTotalRevenueByDateRange(startDate, endDate);
+      return ResponseEntity.ok(response);
+    }
+
+    // Logic cũ cho tháng cụ thể
+    if (year == null || month == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'year/month' hoặc 'startDate/endDate'");
+    }
+
     RevenueStatResponse response = statisticsService.getTotalRevenueByMonth(year, month);
     return ResponseEntity.ok(response);
   }
 
-  @Operation(summary = "Thống kê doanh thu theo năm", description = "Lấy thông tin tổng doanh thu và số đơn hàng trong một năm")
+  @Operation(summary = "Thống kê doanh thu theo năm", description = "Lấy thông tin tổng doanh thu và số đơn hàng trong một năm hoặc khoảng thời gian")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy thống kê doanh thu thành công",
                   content = @Content(schema = @Schema(implementation = RevenueStatResponse.class)))
   })
   @GetMapping("/revenue/yearly")
   public ResponseEntity<RevenueStatResponse> getYearlyRevenue(
-      @RequestParam @Parameter(description = "Năm cần thống kê") int year) {
+      @RequestParam(required = false) @Parameter(description = "Năm cần thống kê") Integer year,
+      @RequestParam(required = false) @Parameter(description = "Ngày bắt đầu (yyyy-MM-dd)") LocalDate startDate,
+      @RequestParam(required = false) @Parameter(description = "Ngày kết thúc (yyyy-MM-dd)") LocalDate endDate) {
+
+    // Nếu có startDate và endDate, ưu tiên sử dụng khoảng thời gian
+    if (startDate != null && endDate != null) {
+      if (startDate.isAfter(endDate)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày bắt đầu không thể sau ngày kết thúc");
+      }
+      RevenueStatResponse response = statisticsService.getTotalRevenueByDateRange(startDate, endDate);
+      return ResponseEntity.ok(response);
+    }
+
+    // Logic cũ cho năm cụ thể
+    if (year == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'year' hoặc 'startDate/endDate'");
+    }
+
     RevenueStatResponse response = statisticsService.getTotalRevenueByYear(year);
     return ResponseEntity.ok(response);
   }
 
+  @Operation(summary = "Top sản phẩm bán chạy theo ngày", description = "Lấy danh sách sản phẩm bán chạy nhất trong một ngày cụ thể hoặc khoảng thời gian")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Lấy danh sách sản phẩm bán chạy thành công")
+  })
   @GetMapping("/products/top-selling/daily")
   public ResponseEntity<List<ProductSalesResponse>> getTopSellingProductsDaily(
-          @RequestParam(required = false) LocalDate date,
+          @RequestParam(required = false) @Parameter(description = "Ngày cụ thể (yyyy-MM-dd)") LocalDate date,
+          @RequestParam(required = false) @Parameter(description = "Ngày bắt đầu (yyyy-MM-dd)") LocalDate startDate,
+          @RequestParam(required = false) @Parameter(description = "Ngày kết thúc (yyyy-MM-dd)") LocalDate endDate,
           @RequestParam(required = false) Integer year,
           @RequestParam(required = false) Integer month,
           @RequestParam(required = false) Integer day,
-          @RequestParam(defaultValue = "10") int limit) {
+          @RequestParam(defaultValue = "10") @Parameter(description = "Số lượng sản phẩm cần lấy") int limit) {
 
+    // Nếu có startDate và endDate, ưu tiên sử dụng khoảng thời gian
+    if (startDate != null && endDate != null) {
+      if (startDate.isAfter(endDate)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày bắt đầu không thể sau ngày kết thúc");
+      }
+      return ResponseEntity.ok(statisticsService.getTopSellingProductsByDateRange(startDate, endDate, limit));
+    }
+
+    // Logic cũ cho ngày cụ thể
     if (date == null && year != null && month != null && day != null) {
       try {
         date = LocalDate.of(year, month, day);
@@ -99,34 +161,66 @@ public class StatisticsController {
     }
 
     if (date == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'date' hoặc 'year/month/day'");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'date', 'year/month/day' hoặc 'startDate/endDate'");
     }
 
     return ResponseEntity.ok(statisticsService.getTopSellingProductsByDate(date, limit));
   }
 
 
-  @Operation(summary = "Top sản phẩm bán chạy theo tháng", description = "Lấy danh sách sản phẩm bán chạy nhất trong một tháng")
+  @Operation(summary = "Top sản phẩm bán chạy theo tháng", description = "Lấy danh sách sản phẩm bán chạy nhất trong một tháng hoặc khoảng thời gian")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy danh sách sản phẩm bán chạy thành công")
   })
   @GetMapping("/products/top-selling/monthly")
   public ResponseEntity<List<ProductSalesResponse>> getTopSellingProductsMonthly(
-      @RequestParam @Parameter(description = "Năm") int year,
-      @RequestParam @Parameter(description = "Tháng (1-12)") int month,
+      @RequestParam(required = false) @Parameter(description = "Năm") Integer year,
+      @RequestParam(required = false) @Parameter(description = "Tháng (1-12)") Integer month,
+      @RequestParam(required = false) @Parameter(description = "Ngày bắt đầu (yyyy-MM-dd)") LocalDate startDate,
+      @RequestParam(required = false) @Parameter(description = "Ngày kết thúc (yyyy-MM-dd)") LocalDate endDate,
       @RequestParam(defaultValue = "10") @Parameter(description = "Số lượng sản phẩm cần lấy") int limit) {
+
+    // Nếu có startDate và endDate, ưu tiên sử dụng khoảng thời gian
+    if (startDate != null && endDate != null) {
+      if (startDate.isAfter(endDate)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày bắt đầu không thể sau ngày kết thúc");
+      }
+      return ResponseEntity.ok(statisticsService.getTopSellingProductsByDateRange(startDate, endDate, limit));
+    }
+
+    // Logic cũ cho tháng cụ thể
+    if (year == null || month == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'year/month' hoặc 'startDate/endDate'");
+    }
+
     List<ProductSalesResponse> responses = statisticsService.getTopSellingProductsByMonth(year, month, limit);
     return ResponseEntity.ok(responses);
   }
 
-  @Operation(summary = "Top sản phẩm bán chạy theo năm", description = "Lấy danh sách sản phẩm bán chạy nhất trong một năm")
+  @Operation(summary = "Top sản phẩm bán chạy theo năm", description = "Lấy danh sách sản phẩm bán chạy nhất trong một năm hoặc khoảng thời gian")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Lấy danh sách sản phẩm bán chạy thành công")
   })
   @GetMapping("/products/top-selling/yearly")
   public ResponseEntity<List<ProductSalesResponse>> getTopSellingProductsYearly(
-      @RequestParam @Parameter(description = "Năm cần thống kê") int year,
+      @RequestParam(required = false) @Parameter(description = "Năm cần thống kê") Integer year,
+      @RequestParam(required = false) @Parameter(description = "Ngày bắt đầu (yyyy-MM-dd)") LocalDate startDate,
+      @RequestParam(required = false) @Parameter(description = "Ngày kết thúc (yyyy-MM-dd)") LocalDate endDate,
       @RequestParam(defaultValue = "10") @Parameter(description = "Số lượng sản phẩm cần lấy") int limit) {
+
+    // Nếu có startDate và endDate, ưu tiên sử dụng khoảng thời gian
+    if (startDate != null && endDate != null) {
+      if (startDate.isAfter(endDate)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày bắt đầu không thể sau ngày kết thúc");
+      }
+      return ResponseEntity.ok(statisticsService.getTopSellingProductsByDateRange(startDate, endDate, limit));
+    }
+
+    // Logic cũ cho năm cụ thể
+    if (year == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tham số 'year' hoặc 'startDate/endDate'");
+    }
+
     List<ProductSalesResponse> responses = statisticsService.getTopSellingProductsByYear(year, limit);
     return ResponseEntity.ok(responses);
   }
