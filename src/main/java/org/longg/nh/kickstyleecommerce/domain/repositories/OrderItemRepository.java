@@ -94,7 +94,7 @@ public interface OrderItemRepository extends IBaseRepository<OrderItem, Long> {
     @Query(value = "SELECT oi.variant_id as variantId, oi.product_name as productName, " +
            "SUM(oi.quantity) as totalSold, " +
            "SUM(oi.quantity * oi.unit_price) as totalRevenue " +
-           "FROM order_items oi JOIN orders o ON oi.order_id = o.id " +
+           "FROM orders.order_items oi JOIN orders.orders o ON oi.order_id = o.id " +
            "WHERE o.status = 'DELIVERED' AND oi.created_at BETWEEN :startDate AND :endDate " +
            "GROUP BY oi.variant_id, oi.product_name " +
            "ORDER BY totalSold DESC " +
